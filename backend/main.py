@@ -13,10 +13,11 @@ import os
 import datetime
 import json
 import logging
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -51,6 +52,14 @@ except ImportError as e:
 # ── monitoring agent ──────────────────────────────────────────────────────────
 from monitor import monitoring_agent
 
+# ── report generation ─────────────────────────────────────────────────────────
+try:
+    from reports import generate_strategic_risk_report, generate_executive_targeting_report
+except ImportError:
+    logging.warning("reports.py import failed")
+    def generate_strategic_risk_report(*args): pass
+    def generate_executive_targeting_report(*args): pass
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)-24s | %(levelname)-5s | %(message)s")
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -69,6 +78,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Static files for reports ──────────────────────────────────────────────────
+REPORTS_DIR = os.path.join(BACKEND_DIR, "static", "reports")
+os.makedirs(REPORTS_DIR, exist_ok=True)
+app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
 
 
 @app.on_event("startup")
@@ -167,6 +181,37 @@ async def analyze_region(request: RegionAnalysisRequest):
         results = run_region_pipeline(request.region, request.threshold)
         return results
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Report Generation Endpoints ───────────────────────────────────────────────
+
+@app.post("/generate-report")
+async def generate_report(data: Dict[str, Any]):
+    """
+    Generate two PDFs (Internal Strategic Intel & Outreach Blueprint).
+    Returns URLs to the generated static files.
+    """
+    try:
+        domain = data.get("domain", "unknown").replace(".", "_")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        intel_filename = f"strategic_intel_{domain}_{timestamp}.pdf"
+        outreach_filename = f"outreach_blueprint_{domain}_{timestamp}.pdf"
+        
+        intel_path = os.path.join(REPORTS_DIR, intel_filename)
+        outreach_path = os.path.join(REPORTS_DIR, outreach_filename)
+        
+        # Run generation
+        generate_strategic_risk_report(data, intel_path)
+        generate_executive_targeting_report(data, outreach_path)
+        
+        return {
+            "enterprise_pdf_url": f"/reports/{intel_filename}",
+            "outreach_pdf_url": f"/reports/{outreach_filename}"
+        }
+    except Exception as e:
+        logging.error("Failed to generate PDF: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -13,6 +13,8 @@ import WatchlistPanel from "./components/WatchlistPanel";
 import AlertsPanel from "./components/AlertsPanel";
 import AlertBadge from "./components/AlertBadge";
 import { useWatchlist } from "./hooks/useWatchlist";
+import { generateReports, getReportUrl } from "./api";
+import { Download, FileText, Send } from "lucide-react";
 import "./index.css";
 
 const TABS = [
@@ -79,8 +81,8 @@ function WatchlistToggle({ data, isWatched, onAdd, onRemove, watchlistId }) {
             onClick={handleToggle}
             disabled={busy}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${isWatched
-                    ? "bg-primary/15 border-primary/30 text-primary hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
-                    : "bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
+                ? "bg-primary/15 border-primary/30 text-primary hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                : "bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
                 }`}
         >
             <Eye size={13} />
@@ -95,6 +97,8 @@ export default function App() {
     const [result, setResult] = useState(null);
     const [mode, setMode] = useState(null);
     const [error, setError] = useState(null);
+    const [generatingReports, setGeneratingReports] = useState(false);
+    const [reportUrls, setReportUrls] = useState(null);
 
     const {
         watchlist, addToWatchlist, removeFromWatchlist, scanNow,
@@ -107,9 +111,24 @@ export default function App() {
         setResult(data);
         setMode(m);
         setError(null);
+        setReportUrls(null); // Reset reports for new result
         setTimeout(() => {
             document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
         }, 200);
+    };
+
+    const handleDownloadReports = async () => {
+        if (!result) return;
+        setGeneratingReports(true);
+        try {
+            const urls = await generateReports(result);
+            setReportUrls(urls);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to generate strategic reports.");
+        } finally {
+            setGeneratingReports(false);
+        }
     };
 
     const handleError = (msg) => {
@@ -192,8 +211,8 @@ export default function App() {
                             key={id}
                             onClick={() => { setActiveTab(id); if (id === "alerts") fetchAlerts(); }}
                             className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === id
-                                    ? "bg-zinc-800 text-zinc-100 shadow-sm"
-                                    : "text-zinc-500 hover:text-zinc-300"
+                                ? "bg-zinc-800 text-zinc-100 shadow-sm"
+                                : "text-zinc-500 hover:text-zinc-300"
                                 }`}
                         >
                             <Icon size={13} />
@@ -267,8 +286,51 @@ export default function App() {
                                         {/* Domain results */}
                                         {isDomain && domainData && (
                                             <>
-                                                {/* Watchlist toggle */}
-                                                <div className="flex justify-end">
+                                                {/* Actions Bar */}
+                                                <div className="flex flex-wrap items-center justify-between gap-4 py-2">
+                                                    <div className="flex items-center gap-2">
+                                                        {!reportUrls ? (
+                                                            <button
+                                                                onClick={handleDownloadReports}
+                                                                disabled={generatingReports}
+                                                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                                                            >
+                                                                {generatingReports ? (
+                                                                    <>
+                                                                        <Loader2 size={14} className="animate-spin" />
+                                                                        Generating Reports...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Download size={14} />
+                                                                        Generate Strategic PDFs
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2">
+                                                                <a
+                                                                    href={getReportUrl(reportUrls.enterprise_pdf_url)}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
+                                                                >
+                                                                    <FileText size={14} />
+                                                                    Download Intelligence Report
+                                                                </a>
+                                                                <a
+                                                                    href={getReportUrl(reportUrls.outreach_pdf_url)}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500 hover:text-white transition-all"
+                                                                >
+                                                                    <Send size={14} />
+                                                                    Download Outreach Blueprint
+                                                                </a>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
                                                     <WatchlistToggle
                                                         data={domainData}
                                                         isWatched={watched}

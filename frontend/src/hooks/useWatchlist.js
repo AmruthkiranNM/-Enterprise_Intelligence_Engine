@@ -106,11 +106,21 @@ export function useWatchlist() {
         } catch { /* offline */ }
     }, []);
 
+    const scanWatchlist = useCallback(async () => {
+        const activeEntries = watchlist.filter(e => e.is_active);
+        for (const entry of activeEntries) {
+            await scanNow(entry.id);
+        }
+    }, [watchlist, scanNow]);
+
     // ── initialization + polling ─────────────────────────────────────────────
     useEffect(() => {
-        fetchWatchlist();
-        fetchAlerts();
-        fetchUnreadCount();
+        const init = async () => {
+            await fetchWatchlist();
+            await fetchAlerts();
+            await fetchUnreadCount();
+        };
+        init();
 
         // Poll unread count every 30s
         pollRef.current = setInterval(fetchUnreadCount, 30_000);

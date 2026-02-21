@@ -220,6 +220,14 @@ def _mock_web_search(query: str, num_results: int = 10) -> List[Dict[str, str]]:
     return results[:num_results]
 
 
+def search_web(query: str, num_results: int = 10) -> List[Dict[str, str]]:
+    """Generic web search (live Tavily or mock fallback)."""
+    if USE_TAVILY:
+        return _real_web_search(query, max_results=num_results)
+    else:
+        return _mock_web_search(query, num_results=num_results)
+
+
 # ════════════════════════════════════════════════════════════════
 # Main Search Function
 # ════════════════════════════════════════════════════════════════

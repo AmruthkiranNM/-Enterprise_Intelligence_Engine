@@ -24,7 +24,10 @@ from company_discovery.utils import interpret_threshold, validate_inputs
 from company_discovery.search import search_companies
 from company_discovery.signals import extract_signals
 from company_discovery.scoring import score_company_region, score_company_domain
-from company_discovery.intelligence import build_dossier, detect_bottlenecks
+from company_discovery.intelligence import (
+    build_dossier, detect_bottlenecks, compute_strategic_pressure,
+    get_pressure_metadata
+)
 from company_discovery.outreach import generate_outreach
 
 # ────────────────────────────────────────────────────────────────
@@ -204,7 +207,8 @@ def run_domain_pipeline(
             "total": score_result["total"],
             "classification": score_result["classification"],
             "has_trigger_event": score_result["has_trigger_event"],
-            "strategic_pressure": score_result.get("strategic_pressure", 0),
+            "strategic_pressure_index": score_result.get("strategic_pressure", 0),
+            **get_pressure_metadata(score_result.get("strategic_pressure", 0))
         },
         "why_now": why_now,
         "personalized_outreach": outreach,

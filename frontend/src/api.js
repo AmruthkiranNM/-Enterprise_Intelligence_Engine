@@ -26,6 +26,24 @@ export async function analyzeRegion(region, threshold) {
     return res.json();
 }
 
+export async function generateReports(analysisData) {
+    const res = await fetch(`${API_BASE}/generate-report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(analysisData),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+        throw new Error(err.detail || "Failed to generate reports");
+    }
+    return res.json();
+}
+
+export function getReportUrl(path) {
+    if (!path) return null;
+    return `${API_BASE}${path}`;
+}
+
 // ─── Mock for offline development ─────────────────────────────────────────
 export const MOCK_DOMAIN_RESPONSE = {
     mode: "DOMAIN",
