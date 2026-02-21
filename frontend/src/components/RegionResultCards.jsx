@@ -47,8 +47,8 @@ function WatchlistToggle({ company, isWatched, onAdd, onRemove, watchlistId }) {
             disabled={busy}
             title={isWatched ? "Remove from watchlist" : "Add to Watchlist"}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isWatched
-                    ? "bg-primary/15 border-primary/30 text-primary hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
-                    : "bg-zinc-800/60 border-zinc-700/50 text-zinc-500 hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
+                ? "bg-primary/15 border-primary/30 text-primary hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                : "bg-zinc-800/60 border-zinc-700/50 text-zinc-500 hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
                 }`}
         >
             <Eye size={11} />

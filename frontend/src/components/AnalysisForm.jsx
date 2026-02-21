@@ -51,8 +51,8 @@ export default function AnalysisForm({ onResult, onError, onLoading }) {
                     type="button"
                     onClick={() => setMode("domain")}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${mode === "domain"
-                            ? "bg-primary text-white shadow-lg shadow-primary/25"
-                            : "text-zinc-400 hover:text-zinc-200"
+                        ? "bg-primary text-white shadow-lg shadow-primary/25"
+                        : "text-zinc-400 hover:text-zinc-200"
                         }`}
                 >
                     <Globe size={15} />
@@ -62,8 +62,8 @@ export default function AnalysisForm({ onResult, onError, onLoading }) {
                     type="button"
                     onClick={() => setMode("region")}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${mode === "region"
-                            ? "bg-primary text-white shadow-lg shadow-primary/25"
-                            : "text-zinc-400 hover:text-zinc-200"
+                        ? "bg-primary text-white shadow-lg shadow-primary/25"
+                        : "text-zinc-400 hover:text-zinc-200"
                         }`}
                 >
                     <MapPin size={15} />

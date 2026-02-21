@@ -165,7 +165,7 @@ export default function App() {
 
             <AnimatePresence>{loading && <LoadingOverlay />}</AnimatePresence>
 
-            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+            <div className="relative z-10 max-w-[1600px] mx-auto px-6 py-10 space-y-10">
 
                 {/* ── Header ─────────────────────────────────────────────── */}
                 <motion.header
@@ -340,12 +340,18 @@ export default function App() {
                                                     />
                                                 </div>
                                                 <SummaryCard data={domainData} />
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    <LeadScoreChart data={domainData} />
-                                                    <SignalsPanel data={domainData} />
-                                                    <BottleneckCards data={domainData} />
-                                                    <OutreachStrategy data={domainData} />
-                                                    <ResearchTrace data={domainData} />
+                                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                                    <div className="lg:col-span-8 space-y-8">
+                                                        <LeadScoreChart data={domainData} />
+                                                        <OutreachStrategy data={domainData} />
+                                                    </div>
+                                                    <div className="lg:col-span-4 space-y-8">
+                                                        <SignalsPanel data={domainData} />
+                                                        <BottleneckCards data={domainData} />
+                                                    </div>
+                                                    <div className="lg:col-span-12">
+                                                        <ResearchTrace data={domainData} />
+                                                    </div>
                                                 </div>
                                             </>
                                         )}

@@ -20,7 +20,6 @@ class WatchlistEntry(Base):
     added_at           = Column(DateTime, default=datetime.datetime.utcnow)
     last_scan_at       = Column(DateTime, nullable=True)
     last_trigger_snapshot = Column(Text, default="[]")   # JSON list of trigger strings
-    content_hash       = Column(String(64), default="")  # SHA-256 of last scraped website content
     is_active          = Column(Boolean, default=True)
 
 

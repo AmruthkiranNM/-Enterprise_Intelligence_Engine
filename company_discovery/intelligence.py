@@ -379,103 +379,48 @@ def compute_strategic_pressure(
     trigger_events: List[str],
 ) -> int:
     """
-    Strategic Pressure Index (SPI) — Weighted 0–20 Model.
-    Reflects cumulative operational change signals indicating infrastructure strain.
+    Derived metric: strategic_pressure_score.
 
-    Weights:
-        +3 : Funding event detected (per unique signal)
-        +3 : M&A / Acquisition event (per unique signal)
-        +2 : Product launch / new feature (per unique signal)
-        +2 : Hiring intensity: High (binary)
-        +2 : Multi-location / Global expansion (binary or per unique signal)
-        +2 : Leadership change (per unique signal)
-        +1 : Enterprise client signals (binary)
+    Calculation:
+        +1 per growth signal
+        +1 per scale signal
+        +1 if hiring intensity = Moderate
+        +2 if hiring intensity = High
+        +1 if M&A detected
+        +1 if new office expansion detected
+        +1 if enterprise client references detected
     """
     score = 0
-    all_signals = list(set(trigger_events + growth_signals)) # unique items
 
-    # Additive Categories (can have multiples)
-    funding_kws = ["funding", "raised", "series", "seed round", "valuation"]
-    ma_keywords = ["m&a", "acquisition", "acquired", "merger"]
-    product_kws = ["product launch", "new feature", "unveiled", "launched platform"]
-    expansion_kws = ["new office", "expansion", "global", "international"]
-    leadership_kws = ["new ceo", "new cto", "appointed", "joined as"]
+    # +1 per growth signal
+    score += len(growth_signals)
 
-    for s in all_signals:
-        s_low = s.lower()
-        if any(kw in s_low for kw in funding_kws):
-            score += 3
-        elif any(kw in s_low for kw in ma_keywords):
-            score += 3
-        elif any(kw in s_low for kw in product_kws):
-            score += 2
-        elif any(kw in s_low for kw in expansion_kws):
-            score += 2
-        elif any(kw in s_low for kw in leadership_kws):
-            score += 2
+    # +1 per scale signal
+    score += len(scale_signals)
 
-    # Binary Meta-signals
+    # Hiring intensity
     if hiring_intensity == "High":
         score += 2
-    
-    # Check multi_location signal from scraper
-    if signals.get("multi_location", {}).get("detected", False):
-        # Only add if not already boosted by an expansion keyword in growth signals
-        if not any(any(kw in s.lower() for kw in expansion_kws) for s in all_signals):
-            score += 2
-
-    if signals.get("enterprise_clients", {}).get("detected", False):
+    elif hiring_intensity == "Moderate":
         score += 1
 
-    final_score = min(score, 20)
-    logger.info("Strategic Pressure Index (SPI): %d/20", final_score)
-    return final_score
+    # M&A detection (from trigger events or growth signals)
+    ma_keywords = ["m&a", "acquisition", "acquired", "merger"]
+    if any(any(kw in s.lower() for kw in ma_keywords) for s in trigger_events + growth_signals):
+        score += 1
 
+    # New office expansion
+    office_keywords = ["new office", "expansion"]
+    if any(any(kw in s.lower() for kw in office_keywords) for s in trigger_events + growth_signals):
+        score += 1
 
-def get_pressure_metadata(score: int) -> Dict[str, str]:
-    """
-    Map SPI score to analytical tier metadata for enterprise evaluation.
-    """
-    if score >= 17:
-        return {
-            "tier": "Critical Transformation Window",
-            "operational_meaning": "Extreme transformation urgency. Infrastructure scaling bottlenecks imminent.",
-            "engagement_mode": "Executive Escalation",
-            "color": "#EF4444",  # Red-500
-            "explanation": "Critical multi-signal convergence detected. Immediate structural transformation is anticipated."
-        }
-    elif score >= 13:
-        return {
-            "tier": "High Operational Strain",
-            "operational_meaning": "Major operational flux detected. Current systems likely nearing peak capacity.",
-            "engagement_mode": "Immediate Outreach",
-            "color": "#F97316",  # Orange-500
-            "explanation": "High-impact growth and funding signals indicate rapid scaling and potential resource strain."
-        }
-    elif score >= 8:
-        return {
-            "tier": "Accelerating Change Velocity",
-            "operational_meaning": "Increasing operational momentum. Early evidence of infrastructure modernization needs.",
-            "engagement_mode": "Strategic Entry",
-            "color": "#F59E0B",  # Amber-500
-            "explanation": "Accelerating signal density Suggests active transition from growth to scale."
-        }
-    elif score >= 4:
-        return {
-            "tier": "Emerging Operational Velocity",
-            "operational_meaning": "Early-stage growth signals detected. Infrastructure expansion is likely entering planning phase.",
-            "engagement_mode": "Warm Observation",
-            "color": "#3B82F6",  # Blue-500
-            "explanation": "Initial high-impact signals detected. Monitoring for secondary confirmation of scale."
-        }
-    else:
-        return {
-            "tier": "Stable Operational Velocity",
-            "operational_meaning": "Normal operational baseline. No immediate infrastructure strain inferred.",
-            "engagement_mode": "Passive Monitoring",
-            "color": "#71717A",  # Zinc-500
-            "explanation": "Low cumulative high-impact change signals detected. Maintaining monitoring baseline."
-        }
+    # Enterprise client references
+    has_enterprise = signals.get("enterprise_clients", {}).get("detected", False)
+    if has_enterprise:
+        score += 1
+
+    logger.info("Strategic pressure score: %d", score)
+    return score
 
 
 # ════════════════════════════════════════════════════════════════

@@ -5,8 +5,8 @@ function SignalPill({ label, isHighlight }) {
     return (
         <div
             className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 ${isHighlight
-                    ? "bg-amber-500/15 text-amber-300 border border-amber-500/25"
-                    : "bg-zinc-900 text-zinc-300 border border-zinc-800"
+                ? "bg-amber-500/15 text-amber-300 border border-amber-500/25"
+                : "bg-zinc-900 text-zinc-300 border border-zinc-800"
                 }`}
         >
             {isHighlight && <Flame size={11} className="text-amber-400" />}
