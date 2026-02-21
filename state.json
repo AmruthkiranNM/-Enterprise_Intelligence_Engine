@@ -2,31 +2,57 @@
     "target_domain": "druva.com",
     "dossier": {
         "tech_stack": [
-            "Cloud-native SaaS",
-            "AWS & Azure",
-            "AI Agents (Dru MetaGraph)",
-            "Python/Go (33% AI-generated code target)"
+            "Cloud-native SaaS (100% SaaS — no on-premise)",
+            "AWS (EC2, RDS, Lambda, Bedrock) & Microsoft Azure",
+            "Python, Go, C/C++, Java, NodeJS",
+            "AI/ML: Amazon Bedrock, LLMs, Multi-agent AI Copilot (DruAI)",
+            "Microfrontend architecture migration in progress",
+            "CEO target: 33% of code written by AI by end-2025"
         ],
         "pivots": [
-            "Strategic partnership upgrade with Microsoft Azure (March 2025)",
+            "Strategic partnership with Microsoft Azure (March 2025) — storing backups in Azure data centers",
             "Launch of ReconX Labs for threat intelligence",
-            "CEO-led initiative to have 1/3 of business code written by AI by end of 2025"
+            "Threat Watch product launch (January 2026) — proactive continuous threat monitoring",
+            "FedRAMP Moderate expansion for public sector (April 2025)",
+            "Shift from 'data protection' to 'cyber resilience' positioning",
+            "Cohesity-Veritas merger intensifying competitive pressure",
+            "New CFO (Jagroop Bal) appointed February 2025 — fiscal restructuring signal",
+            "Expanded Microsoft Entra ID + Azure VM cyber recovery (November 2025)"
         ],
         "fiscal_signals": [
-            "No new funding since 2021 (Series H, $147M)",
-            "Reached $200M ARR milestone",
-            "Operational focus on 'Cyber Resilience' and metadata-driven security"
+            "Series H: $147M at $2B valuation (Viking Global Investors)",
+            "Total raised: $475M across 10 rounds",
+            "Surpassed $200M SaaS ARR (August 2023), estimated ~$300M current revenue",
+            "Subsidiary revenue: Druva Europe $23.1M, Druva India $49.7M (March 2025)",
+            "No new funding since Series H — operating on existing runway",
+            "Consumption-based pricing via 'Druva Credits' model",
+            "Named 2025 Gartner Magic Quadrant Leader (first pure-SaaS vendor in category)"
+        ],
+        "hiring_signals": [
+            "CEO stated 'muted' entry-level hiring — AI replacing junior coding tasks",
+            "High demand for domain experts in data security and cloud architecture",
+            "Active hiring: ML Engineers, Cloud Security Engineers, SDETs, Engineering Managers",
+            "SVP Engineering Aalop Shah leading scaling efforts"
+        ],
+        "competitive_context": [
+            "Gartner MQ Leader 2025 — first 100% SaaS vendor in Backup & Data Protection",
+            "Competitors: Veeam (market share leader), Commvault (cyber resilience pivot), Cohesity+Veritas (merged entity now #1 by share)",
+            "Veeam noted as 'reactive' by Gartner — Druva has innovation positioning advantage",
+            "Cohesity-Veritas merger creates a new mega-competitor (largest by market share)",
+            "Data protection market: $172.67B (2025) → $656.47B (2034)"
         ]
     },
     "verdict": {
-        "status": "GO",
-        "why_now": "Druva is at a critical inflection point: they've committed to a massive internal AI transformation (33% code target) and a strategic Azure pivot. They need specialized AI agents to manage this transition and scale their market presence without the 'muted' hiring the CEO mentioned.",
-        "catalog_match": "Market Intelligence Agent (to scale SDR/Outreach for the new Azure partnership) and Legacy Modernization AI (to support the 1/3rd AI-code initiative)."
+        "status": "STRONG LEAD",
+        "why_now": "Druva is at a triple inflection: (1) Their CEO has mandated 33% AI-generated code, creating immediate demand for AI workflow modernization tools. (2) The Cohesity-Veritas merger just created a new market-share leader, pressuring Druva to accelerate innovation velocity. (3) The new CFO appointment (Feb 2025) signals fiscal restructuring — they need to demonstrate ROI on their $475M raised without burning additional runway. DataVex's Legacy Modernization AI directly addresses the AI code migration mandate, while Market Intelligence Agent can power their SDR scaling as they push the Azure partnership.",
+        "catalog_match": "Legacy Modernization AI (directly supports the CEO's 1/3 AI-code mandate and microfrontend migration) + Market Intelligence Agent (to scale partner-led GTM for the Azure co-sell motion without proportional headcount)"
     },
     "research_trace": [
-        "Identified Druva as a top-tier candidate in the Sahyadri region.",
-        "Initialized dossier for druva.com focusing on SaaS scalability and AI transformation.",
-        "Discovered CEO Jaspreet Singh's 2025 mandate for AI-generated code and the Azure strategic shift.",
-        "Mapped signals to 'Legacy Modernization' and 'Market Intelligence' tools in catalog.json."
+        "Phase 1: OSINT search for Druva funding/revenue — found $475M total raised, $2B valuation, $200M+ ARR growing to ~$300M.",
+        "Phase 2: Hiring trends — CEO Jaspreet Singh's AI-first mandate ('muted' hiring), demand for domain experts, ML engineers.",
+        "Phase 3: Product launches — Threat Watch (Jan 2026), Azure expansion, FedRAMP, DruAI integration.",
+        "Phase 4: Leadership mapping — CEO Jaspreet Singh, CTO Stephen Manley, CDO Milind Borate, SVP Eng Aalop Shah, new CFO Jagroop Bal (Feb 2025).",
+        "Phase 5: Competitive analysis — Gartner MQ Leader 2025, Cohesity-Veritas merger threat, Veeam market-share dominance.",
+        "Phase 6: Signal mapping to DataVex catalog — Legacy Modernization AI fits AI-code mandate, Market Intelligence Agent fits partner GTM scaling."
     ]
 }
