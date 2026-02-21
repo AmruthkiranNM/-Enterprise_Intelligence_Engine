@@ -434,37 +434,47 @@ def compute_strategic_pressure(
 
 def get_pressure_metadata(score: int) -> Dict[str, str]:
     """
-    Map SPI score to tier metadata for frontend display.
+    Map SPI score to analytical tier metadata for enterprise evaluation.
     """
     if score >= 17:
         return {
-            "tier": "Critical Window",
+            "tier": "Critical Transformation Window",
+            "operational_meaning": "Extreme transformation urgency. Infrastructure scaling bottlenecks imminent.",
+            "engagement_mode": "Executive Escalation",
             "color": "#EF4444",  # Red-500
-            "guidance": "Strategic Priority"
+            "explanation": "Critical multi-signal convergence detected. Immediate structural transformation is anticipated."
         }
     elif score >= 13:
         return {
-            "tier": "High Pressure",
+            "tier": "High Operational Strain",
+            "operational_meaning": "Major operational flux detected. Current systems likely nearing peak capacity.",
+            "engagement_mode": "Immediate Outreach",
             "color": "#F97316",  # Orange-500
-            "guidance": "Immediate Engagement"
+            "explanation": "High-impact growth and funding signals indicate rapid scaling and potential resource strain."
         }
     elif score >= 8:
         return {
-            "tier": "Accelerating",
+            "tier": "Accelerating Change Velocity",
+            "operational_meaning": "Increasing operational momentum. Early evidence of infrastructure modernization needs.",
+            "engagement_mode": "Strategic Entry",
             "color": "#F59E0B",  # Amber-500
-            "guidance": "Advisory Entry"
+            "explanation": "Accelerating signal density Suggests active transition from growth to scale."
         }
     elif score >= 4:
         return {
-            "tier": "Emerging",
+            "tier": "Emerging Operational Velocity",
+            "operational_meaning": "Early-stage growth signals detected. Infrastructure expansion is likely entering planning phase.",
+            "engagement_mode": "Warm Observation",
             "color": "#3B82F6",  # Blue-500
-            "guidance": "Early Engagement"
+            "explanation": "Initial high-impact signals detected. Monitoring for secondary confirmation of scale."
         }
     else:
         return {
-            "tier": "Stable",
+            "tier": "Stable Operational Velocity",
+            "operational_meaning": "Normal operational baseline. No immediate infrastructure strain inferred.",
+            "engagement_mode": "Passive Monitoring",
             "color": "#71717A",  # Zinc-500
-            "guidance": "Monitor"
+            "explanation": "Low cumulative high-impact change signals detected. Maintaining monitoring baseline."
         }
 
 
