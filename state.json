@@ -1,0 +1,14 @@
+{
+  "target_domain": "",
+  "dossier": {
+    "tech_stack": [],
+    "pivots": [],
+    "fiscal_signals": []
+  },
+  "verdict": {
+    "status": "PENDING",
+    "why_now": "",
+    "catalog_match": ""
+  },
+  "research_trace": []
+}

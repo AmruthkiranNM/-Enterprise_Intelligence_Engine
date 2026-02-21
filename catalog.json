@@ -1,0 +1,15 @@
+{
+  "company": "DataVex",
+  "services": [
+    {
+      "name": "Legacy Modernization AI",
+      "targets": ["Technical Debt", "Old Tech Stacks"],
+      "pitch": "We automate the transition from legacy systems to agentic AI workflows."
+    },
+    {
+      "name": "Market Intelligence Agent",
+      "targets": ["Recent Pivots", "New Funding"],
+      "pitch": "We help recently funded companies scale their SDR outreach using autonomous agents."
+    }
+  ]
+}
