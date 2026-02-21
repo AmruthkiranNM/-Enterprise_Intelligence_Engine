@@ -41,14 +41,14 @@ def _build_strategic_angle(
     high_severity = [b for b in bottlenecks if b.get("severity") == "High"]
     if high_severity:
         return (
-            f"Address {high_severity[0]['weakness'].lower()} — "
+            f"Address {high_severity[0]['title'].lower()} — "
             f"mapped to {high_severity[0]['mapped_service']}"
         )
 
     medium_severity = [b for b in bottlenecks if b.get("severity") == "Medium"]
     if medium_severity:
         return (
-            f"Explore {medium_severity[0]['weakness'].lower()} — "
+            f"Explore {medium_severity[0]['title'].lower()} — "
             f"potential fit for {medium_severity[0]['mapped_service']}"
         )
 
@@ -76,7 +76,7 @@ def _build_outreach_email(
     )
 
     bottleneck_desc = (
-        primary_bottleneck["weakness"].lower()
+        primary_bottleneck["title"].lower()
         if primary_bottleneck else "scaling challenges"
     )
     mapped_service = (

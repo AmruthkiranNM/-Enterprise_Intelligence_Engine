@@ -88,6 +88,14 @@ app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
 @app.on_event("startup")
 def startup():
     init_db()
+    # Refresh intelligence services from catalog.json
+    try:
+        from company_discovery.intelligence import _load_catalog_services
+        import company_discovery.intelligence as intel
+        intel.DATAVEX_SERVICES = _load_catalog_services()
+        logging.info("Service catalog synchronized successfully")
+    except Exception as e:
+        logging.warning("Failed to sync service catalog: %s", e)
     monitoring_agent.start()
 
 

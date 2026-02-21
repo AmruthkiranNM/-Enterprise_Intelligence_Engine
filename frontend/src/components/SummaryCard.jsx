@@ -111,9 +111,17 @@ export default function SummaryCard({ data }) {
             </div>
 
             {data.why_now && (
-                <p className="mt-5 pt-5 border-t border-border/50 text-sm text-zinc-400 leading-relaxed">
-                    {data.why_now}
-                </p>
+                <div className="mt-6 pt-6 border-t border-white/5">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">
+                            Strategic Justification (Why Now?)
+                        </span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed italic">
+                        "{data.why_now}"
+                    </p>
+                </div>
             )}
         </motion.div>
     );

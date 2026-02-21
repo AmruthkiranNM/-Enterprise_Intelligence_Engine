@@ -3,13 +3,62 @@
   "services": [
     {
       "name": "Legacy Modernization AI",
-      "targets": ["Technical Debt", "Old Tech Stacks"],
+      "targets": [
+        "Technical Debt",
+        "Old Tech Stacks",
+        "Monoliths"
+      ],
       "pitch": "We automate the transition from legacy systems to agentic AI workflows."
     },
     {
       "name": "Market Intelligence Agent",
-      "targets": ["Recent Pivots", "New Funding"],
+      "targets": [
+        "Recent Pivots",
+        "New Funding",
+        "Strategic Shifts"
+      ],
       "pitch": "We help recently funded companies scale their SDR outreach using autonomous agents."
+    },
+    {
+      "name": "AI Automation",
+      "targets": [
+        "Manual Processes",
+        "Inefficient Workflows"
+      ],
+      "pitch": "Harness agentic AI to automate complex enterprise workflows and reduce operational drag."
+    },
+    {
+      "name": "Cloud Modernization",
+      "targets": [
+        "Scaling Bottlenecks",
+        "On-premise Infrastructure"
+      ],
+      "pitch": "Modernize your cloud infrastructure to support rapid growth and high-concurrency demands."
+    },
+    {
+      "name": "Data Engineering & Pipelines",
+      "targets": [
+        "Data Silos",
+        "M&A Integration Complexity",
+        "ETL Latency"
+      ],
+      "pitch": "Build robust data pipelines that unify disparate systems, especially after mergers or acquisitions."
+    },
+    {
+      "name": "DevOps Optimization",
+      "targets": [
+        "Deployment Friction",
+        "Multi-product Complexity"
+      ],
+      "pitch": "Streamline software delivery across multi-product ecosystems with advanced DevOps orchestration."
+    },
+    {
+      "name": "Digital Transformation & Process Automation",
+      "targets": [
+        "Geographic Expansion",
+        "Operational Strain"
+      ],
+      "pitch": "Scale operations globally by automating business processes and reducing manual overhead."
     }
   ]
 }

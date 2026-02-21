@@ -16,6 +16,8 @@ financial data. If a signal is missing, it says so explicitly.
 
 import logging
 import re
+import os
+import json
 from typing import Dict, Any, List, Optional
 
 import requests
@@ -29,13 +31,27 @@ logger = logging.getLogger(__name__)
 # ────────────────────────────────────────────────────────────────
 # DataVex Service Catalog for bottleneck-to-service mapping
 # ────────────────────────────────────────────────────────────────
-DATAVEX_SERVICES = [
-    "AI Automation",
-    "Data Engineering & Pipelines",
-    "Cloud Modernization",
-    "DevOps Optimization",
-    "Digital Transformation & Process Automation",
-]
+def _load_catalog_services() -> List[str]:
+    """Load service names from catalog.json if available."""
+    cat_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "catalog.json")
+    if os.path.exists(cat_path):
+        try:
+            with open(cat_path, "r") as f:
+                data = json.load(f)
+                return [s["name"] for s in data.get("services", [])]
+        except Exception as e:
+            logger.warning("Failed to load catalog.json: %s", e)
+    
+    # Fallback to defaults if catalog.json is missing or invalid
+    return [
+        "AI Automation",
+        "Data Engineering & Pipelines",
+        "Cloud Modernization",
+        "DevOps Optimization",
+        "Digital Transformation & Process Automation",
+    ]
+
+DATAVEX_SERVICES = _load_catalog_services()
 
 # ────────────────────────────────────────────────────────────────
 # Sub-page paths to check beyond the homepage
@@ -222,8 +238,13 @@ def _detect_trigger_events(full_text: str) -> List[str]:
         ("digital transformation", "Active digital transformation initiative"),
         ("cloud migration", "Cloud migration underway"),
         ("cost optimization", "Cost optimization pressure"),
+        ("budget cut", "Fiscal pressure — budget restructuring"),
+        ("downsizing", "Fiscal pressure — operational restructuring"),
+        ("layoff", "Fiscal pressure — workforce reduction"),
         ("restructuring", "Organizational restructuring"),
-        ("pivot", "Business model pivot"),
+        ("pivot", "Business model pivot — strategic shift"),
+        ("rebranding", "Brand/market pivot detected"),
+        ("new direction", "Strategic direction shift"),
         ("recently funded", "Recent funding — growth investment incoming"),
         ("series a", "Series A funding — growth investment"),
         ("series b", "Series B funding — scale-up investment"),
@@ -232,6 +253,7 @@ def _detect_trigger_events(full_text: str) -> List[str]:
         ("series e", "Series E+ funding — pre-IPO stage"),
         ("acquisition", "M&A activity — integration complexity"),
         ("acquired", "Company acquired — strategic integration"),
+        ("merger", "Corporate merger — complex system consolidation"),
         ("new office", "New office expansion — operational scaling"),
         ("expansion", "Market/geographic expansion initiative"),
         ("ipo", "IPO — public markets entry"),
@@ -471,6 +493,22 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
     has_funding = signals.get("funding_mentions", {}).get("detected", False)
     has_multi_loc = signals.get("multi_location", {}).get("detected", False)
 
+    # ── 0. Technical Debt & Legacy Modernization ─────────────
+    tech_debt_keywords = [
+        "legacy system", "on-premise", "mainframe", "monolith", 
+        "cobol", "java 8", "old versions", "manual process",
+        "outdated infrastructure", "technical debt", "migration from",
+    ]
+    has_tech_debt = any(kw in full_text.lower() for kw in tech_debt_keywords)
+    
+    if has_tech_debt:
+        bottlenecks.append({
+            "title": "Technical debt detected — legacy infrastructure inhibiting agentic scale",
+            "evidence": f"Legacy keywords found in site content, Pressure: {pressure}",
+            "severity": "High" if pressure >= 4 else "Medium",
+            "mapped_service": "Legacy Modernization AI",
+        })
+
     # ── 1. Infrastructure scaling risk ───────────────────────
     # Inferred when: funding + expansion + enterprise clients
     funding_evidence = [s for s in trigger_events + growth_signals
@@ -482,7 +520,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     if (funding_evidence or has_funding) and (expansion_evidence or has_multi_loc or has_enterprise):
         bottlenecks.append({
-            "weakness": "Infrastructure scaling risk — rapid growth demands exceed current capacity signals",
+            "title": "Infrastructure scaling risk — rapid growth demands exceed current capacity signals",
             "evidence": (
                 f"Funding signals: {funding_evidence or ['funding_mentions detected']}, "
                 f"Expansion: {expansion_evidence or ['multi-location/enterprise presence']}, "
@@ -498,7 +536,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
                           ["acquisition", "acquired", "m&a", "merger"])]
     if ma_evidence:
         bottlenecks.append({
-            "weakness": "M&A integration complexity — post-acquisition system consolidation needed",
+            "title": "M&A integration complexity — post-acquisition system consolidation needed",
             "evidence": f"M&A signals: {ma_evidence}, Pressure: {pressure}",
             "severity": severity,
             "mapped_service": "Data Engineering & Pipelines",
@@ -510,7 +548,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
                                ["product", "launch", "platform", "feature"])]
     if product_evidence or (has_enterprise and len(growth_signals) >= 2):
         bottlenecks.append({
-            "weakness": "Multi-product ecosystem complexity — DevOps orchestration at scale",
+            "title": "Multi-product ecosystem complexity — DevOps orchestration at scale",
             "evidence": (
                 f"Product signals: {product_evidence or ['enterprise + growth signals']}, "
                 f"Enterprise clients: {has_enterprise}, Pressure: {pressure}"
@@ -556,7 +594,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     if has_ai_evidence:
         bottlenecks.append({
-            "weakness": "AI governance risk — automation scaling without visible ML pipeline governance",
+            "title": "AI governance risk — automation scaling without visible ML pipeline governance",
             "evidence": (
                 f"AI evidence sources: {ai_evidence_count} "
                 f"(signals={ai_in_signals}, industry={ai_in_industry}, page={ai_in_text}), "
@@ -571,7 +609,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
     # Fix 6: Conservative inference — use hedged language
     if pressure >= 4 and not bottlenecks:
         bottlenecks.append({
-            "weakness": "Possible scaling complexity inferred from converging growth and scale signals",
+            "title": "Possible scaling complexity inferred from converging growth and scale signals",
             "evidence": (
                 f"Strategic pressure: {pressure}, "
                 f"Growth signals: {len(growth_signals)}, "
@@ -584,7 +622,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     if pressure >= 6 and len(bottlenecks) < 3:
         bottlenecks.append({
-            "weakness": "Possible operational strain — growth velocity may exceed infrastructure maturity",
+            "title": "Possible operational strain — growth velocity may exceed infrastructure maturity",
             "evidence": (
                 f"Strategic pressure: {pressure} (≥6 threshold), "
                 f"Hiring: {hiring_intensity}, "
@@ -597,7 +635,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
     # ── 6. Expansion without process automation ──────────────
     if expansion_evidence and has_multi_loc and hiring_intensity != "Low":
         bottlenecks.append({
-            "weakness": "Geographic expansion without visible process automation",
+            "title": "Geographic expansion without visible process automation",
             "evidence": (
                 f"Expansion: {expansion_evidence}, "
                 f"Multi-location: True, Hiring: {hiring_intensity}"
@@ -611,7 +649,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
                      if any(kw in s.lower() for kw in ["cost", "restructur"])]
     if cost_evidence:
         bottlenecks.append({
-            "weakness": "Cost optimization pressure — operational efficiency gap",
+            "title": "Cost optimization pressure — operational efficiency gap",
             "evidence": f"Cost triggers: {cost_evidence}",
             "severity": "High",
             "mapped_service": "Data Engineering & Pipelines",
@@ -621,7 +659,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
     if not bottlenecks:
         if pressure <= 2:
             bottlenecks.append({
-                "weakness": "No major bottlenecks — insufficient strategic pressure signals",
+                "title": "No major bottlenecks — insufficient strategic pressure signals",
                 "evidence": f"Strategic pressure: {pressure} (≤2 threshold)",
                 "severity": "Low",
                 "mapped_service": "N/A",
@@ -629,7 +667,7 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
         else:
             # Pressure 3 = moderate; still infer something
             bottlenecks.append({
-                "weakness": "Possible moderate scaling complexity — growth signals present but limited evidence",
+                "title": "Possible moderate scaling complexity — growth signals present but limited evidence",
                 "evidence": (
                     f"Strategic pressure: {pressure}, "
                     f"Growth: {len(growth_signals)}, Scale: {len(scale_signals)}"
