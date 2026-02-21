@@ -1,14 +1,25 @@
 """
-Company Discovery & Revenue Estimation Module
-===============================================
-Discovers companies in a given region and estimates whether they
-likely meet or exceed a specified revenue threshold using public signals only.
+Company Discovery & Intelligence Engine
+=========================================
+Dual-mode enterprise system for B2B sales intelligence.
+
+Modes:
+    REGION MODE:  discover_companies(region, threshold)
+    DOMAIN MODE:  research_domain(domain, threshold)
 
 Usage:
-    from company_discovery import discover_companies
-    results = discover_companies(region="Pune", revenue_threshold="1Cr+")
+    from company_discovery import discover_companies, research_domain
+
+    # Region mode
+    results = discover_companies("Pune", "1Cr+")
+
+    # Domain mode
+    report = research_domain("druva.com", "10Cr+")
 """
 
-from company_discovery.main import discover_companies
+from company_discovery.main import (
+    run_region_pipeline as discover_companies,
+    run_domain_pipeline as research_domain,
+)
 
-__all__ = ["discover_companies"]
+__all__ = ["discover_companies", "research_domain"]
