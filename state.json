@@ -1,14 +1,32 @@
 {
-  "target_domain": "",
-  "dossier": {
-    "tech_stack": [],
-    "pivots": [],
-    "fiscal_signals": []
-  },
-  "verdict": {
-    "status": "PENDING",
-    "why_now": "",
-    "catalog_match": ""
-  },
-  "research_trace": []
+    "target_domain": "druva.com",
+    "dossier": {
+        "tech_stack": [
+            "Cloud-native SaaS",
+            "AWS & Azure",
+            "AI Agents (Dru MetaGraph)",
+            "Python/Go (33% AI-generated code target)"
+        ],
+        "pivots": [
+            "Strategic partnership upgrade with Microsoft Azure (March 2025)",
+            "Launch of ReconX Labs for threat intelligence",
+            "CEO-led initiative to have 1/3 of business code written by AI by end of 2025"
+        ],
+        "fiscal_signals": [
+            "No new funding since 2021 (Series H, $147M)",
+            "Reached $200M ARR milestone",
+            "Operational focus on 'Cyber Resilience' and metadata-driven security"
+        ]
+    },
+    "verdict": {
+        "status": "GO",
+        "why_now": "Druva is at a critical inflection point: they've committed to a massive internal AI transformation (33% code target) and a strategic Azure pivot. They need specialized AI agents to manage this transition and scale their market presence without the 'muted' hiring the CEO mentioned.",
+        "catalog_match": "Market Intelligence Agent (to scale SDR/Outreach for the new Azure partnership) and Legacy Modernization AI (to support the 1/3rd AI-code initiative)."
+    },
+    "research_trace": [
+        "Identified Druva as a top-tier candidate in the Sahyadri region.",
+        "Initialized dossier for druva.com focusing on SaaS scalability and AI transformation.",
+        "Discovered CEO Jaspreet Singh's 2025 mandate for AI-generated code and the Azure strategic shift.",
+        "Mapped signals to 'Legacy Modernization' and 'Market Intelligence' tools in catalog.json."
+    ]
 }
