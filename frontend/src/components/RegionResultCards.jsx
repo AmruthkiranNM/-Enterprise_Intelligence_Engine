@@ -1,11 +1,12 @@
-import { Globe, BarChart2, TrendingUp, Star } from "lucide-react";
+import { useState } from "react";
+import { Globe, BarChart2, TrendingUp, Star, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 
 function confidenceBadge(level) {
     const cfg = {
         High: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25",
-        Medium: "bg-amber-500/15 text-amber-400 border border-amber-500/25",
-        Low: "bg-red-500/15 text-red-400 border border-red-500/25",
+        Medium: "bg-amber-500/15  text-amber-400  border border-amber-500/25",
+        Low: "bg-red-500/15    text-red-400    border border-red-500/25",
     };
     return cfg[level] || cfg.Low;
 }
@@ -18,7 +19,51 @@ function likelihoodColor(likelihood) {
     return "text-red-400";
 }
 
-export default function RegionResultCards({ results }) {
+function WatchlistToggle({ company, isWatched, onAdd, onRemove, watchlistId }) {
+    const [busy, setBusy] = useState(false);
+    const domain = company.website?.replace(/^https?:\/\//, "").replace(/\/$/, "") || "";
+
+    const handleToggle = async (e) => {
+        e.stopPropagation();
+        setBusy(true);
+        if (isWatched) {
+            await onRemove(watchlistId);
+        } else {
+            await onAdd({
+                company_name: company.company_name,
+                domain,
+                industry: company.industry || "Unknown",
+                classification: company.revenue_likelihood || "Not Priority",
+                lead_score: 0,
+                strategic_pressure: 0,
+            });
+        }
+        setBusy(false);
+    };
+
+    return (
+        <button
+            onClick={handleToggle}
+            disabled={busy}
+            title={isWatched ? "Remove from watchlist" : "Add to Watchlist"}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isWatched
+                    ? "bg-primary/15 border-primary/30 text-primary hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                    : "bg-zinc-800/60 border-zinc-700/50 text-zinc-500 hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
+                }`}
+        >
+            <Eye size={11} />
+            {busy ? "…" : isWatched ? "Watching" : "Watch"}
+        </button>
+    );
+}
+
+export default function RegionResultCards({
+    results,
+    isWatched,
+    watchlistIdFor,
+    onAddToWatchlist,
+    onRemoveFromWatchlist,
+}) {
     if (!results || results.length === 0) {
         return (
             <div className="glass-card p-10 text-center text-zinc-500 text-sm">
@@ -33,63 +78,78 @@ export default function RegionResultCards({ results }) {
                 {results.length} Candidate{results.length !== 1 ? "s" : ""} Found
             </h3>
 
-            {results.map((company, i) => (
-                <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="glass-card p-5 space-y-3 hover:border-zinc-600/50 transition-colors"
-                >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h4 className="text-base font-bold text-zinc-100">{company.company_name}</h4>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <Globe size={11} className="text-zinc-500" />
-                                <span className="text-xs text-zinc-500">{company.website}</span>
+            {results.map((company, i) => {
+                const domain = company.website?.replace(/^https?:\/\//, "").replace(/\/$/, "") || "";
+                const watched = isWatched?.(domain) ?? false;
+                const wlId = watchlistIdFor?.(domain) ?? null;
+
+                return (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.08 }}
+                        className="glass-card p-5 space-y-3 hover:border-zinc-600/50 transition-colors"
+                    >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h4 className="text-base font-bold text-zinc-100">{company.company_name}</h4>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <Globe size={11} className="text-zinc-500" />
+                                    <span className="text-xs text-zinc-500">{company.website}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-2">
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${confidenceBadge(company.confidence_level)}`}>
+                                    Confidence: {company.confidence_level}
+                                </span>
+                                {onAddToWatchlist && (
+                                    <WatchlistToggle
+                                        company={company}
+                                        isWatched={watched}
+                                        onAdd={onAddToWatchlist}
+                                        onRemove={onRemoveFromWatchlist}
+                                        watchlistId={wlId}
+                                    />
+                                )}
                             </div>
                         </div>
-                        <div className="flex items-center flex-wrap gap-2">
-                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${confidenceBadge(company.confidence_level)}`}>
-                                Confidence: {company.confidence_level}
-                            </span>
-                        </div>
-                    </div>
 
-                    <div className="flex flex-wrap gap-3">
-                        <div className="flex items-center gap-1.5">
-                            <BarChart2 size={12} className="text-zinc-500" />
-                            <span className="text-xs text-zinc-400">{company.industry}</span>
+                        <div className="flex flex-wrap gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <BarChart2 size={12} className="text-zinc-500" />
+                                <span className="text-xs text-zinc-400">{company.industry}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <TrendingUp size={12} className="text-zinc-500" />
+                                <span className="text-xs text-zinc-400">{company.business_stage}</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            <TrendingUp size={12} className="text-zinc-500" />
-                            <span className="text-xs text-zinc-400">{company.business_stage}</span>
-                        </div>
-                    </div>
 
-                    {company.revenue_likelihood && (
-                        <div className="flex items-center gap-2">
-                            <Star size={12} className="text-amber-400" />
-                            <span className={`text-xs font-semibold ${likelihoodColor(company.revenue_likelihood)}`}>
-                                {company.revenue_likelihood}
-                            </span>
-                        </div>
-                    )}
-
-                    {company.supporting_signals?.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                            {company.supporting_signals.map((sig, j) => (
-                                <span
-                                    key={j}
-                                    className="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-md"
-                                >
-                                    {sig}
+                        {company.revenue_likelihood && (
+                            <div className="flex items-center gap-2">
+                                <Star size={12} className="text-amber-400" />
+                                <span className={`text-xs font-semibold ${likelihoodColor(company.revenue_likelihood)}`}>
+                                    {company.revenue_likelihood}
                                 </span>
-                            ))}
-                        </div>
-                    )}
-                </motion.div>
-            ))}
+                            </div>
+                        )}
+
+                        {company.supporting_signals?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                {company.supporting_signals.map((sig, j) => (
+                                    <span
+                                        key={j}
+                                        className="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-md"
+                                    >
+                                        {sig}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                );
+            })}
         </div>
     );
 }
