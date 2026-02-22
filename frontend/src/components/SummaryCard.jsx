@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Zap, TrendingUp } from "lucide-react";
 
 function classifyColor(cls) {
     if (!cls) return "zinc";
@@ -8,43 +9,44 @@ function classifyColor(cls) {
     return "red";
 }
 
-function GaugeSVG({ value = 0, max = 100 }) {
-    const pct = Math.min(value / max, 1);
-    const radius = 54;
-    const circumference = Math.PI * radius; // half circle
-    const offset = circumference * (1 - pct);
+function LeadScoreBadge({ score }) {
     const color =
-        value >= 75 ? "#10b981" : value >= 50 ? "#f59e0b" : "#ef4444";
+        score >= 75 ? "#10b981" : score >= 50 ? "#f59e0b" : "#ef4444";
+    const ringClass =
+        score >= 75
+            ? "ring-emerald-500/40"
+            : score >= 50
+                ? "ring-amber-500/40"
+                : "ring-red-500/40";
+    const textClass =
+        score >= 75
+            ? "text-emerald-400"
+            : score >= 50
+                ? "text-amber-400"
+                : "text-red-400";
+    const bgClass =
+        score >= 75
+            ? "bg-emerald-500/10"
+            : score >= 50
+                ? "bg-amber-500/10"
+                : "bg-red-500/10";
 
     return (
-        <svg viewBox="0 0 120 70" className="w-36 h-auto">
-            {/* Track */}
-            <path
-                d={`M 10 60 A ${radius} ${radius} 0 0 1 110 60`}
-                fill="none"
-                stroke="#27272a"
-                strokeWidth="8"
-                strokeLinecap="round"
+        <div
+            className={`flex flex-col items-center justify-center w-24 h-24 rounded-2xl ${bgClass} ring-2 ${ringClass} relative`}
+            style={{ boxShadow: `0 0 24px ${color}20` }}
+        >
+            <span className={`text-3xl font-black ${textClass} leading-none`}>
+                {score}
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-1">
+                Lead Score
+            </span>
+            <div
+                className="absolute -inset-px rounded-2xl border opacity-40"
+                style={{ borderColor: color }}
             />
-            {/* Fill */}
-            <path
-                d={`M 10 60 A ${radius} ${radius} 0 0 1 110 60`}
-                fill="none"
-                stroke={color}
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={offset}
-                className="transition-all duration-1000"
-                style={{ filter: `drop-shadow(0 0 6px ${color}80)` }}
-            />
-            <text x="60" y="58" textAnchor="middle" fill={color} fontSize="18" fontWeight="700">
-                {value}
-            </text>
-            <text x="60" y="72" textAnchor="middle" fill="#71717a" fontSize="8">
-                / {max}
-            </text>
-        </svg>
+        </div>
     );
 }
 
@@ -53,6 +55,7 @@ export default function SummaryCard({ data }) {
     const leadScore = data.lead_score || {};
     const classification = leadScore.classification || "Not Priority";
     const color = classifyColor(classification);
+    const total = leadScore.total || 0;
 
     const badgeClass = {
         emerald: "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30",
@@ -73,9 +76,9 @@ export default function SummaryCard({ data }) {
             transition={{ duration: 0.4 }}
             className="glass-card p-6"
         >
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
                 {/* Left: Company info */}
-                <div className="space-y-4 flex-1">
+                <div className="space-y-4 flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
                         <h2 className="text-xl font-bold text-zinc-100 truncate">
                             {data.domain || "Company"}
@@ -86,27 +89,33 @@ export default function SummaryCard({ data }) {
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <Stat label="Industry" value={dossier.industry || "—"} />
                         <Stat label="Business Stage" value={dossier.business_stage || "—"} />
                         <Stat label="Hiring" value={dossier.hiring_intensity || "—"} />
-                        <Stat label="Signal Count" value={dossier.signal_count ? `${dossier.signal_count} signals` : "—"} />
+                        <Stat
+                            label="Growth Signals"
+                            value={dossier.signal_count ? `${dossier.signal_count} signals` : "—"}
+                            highlight
+                        />
                     </div>
 
                     {leadScore.has_trigger_event && (
                         <div className="inline-flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                            <Zap size={11} className="flex-shrink-0" />
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                             Trigger Event Detected — Strategic Window Open
                         </div>
                     )}
                 </div>
 
-                {/* Right: Gauge */}
-                <div className="flex flex-col items-center gap-1">
-                    <GaugeSVG value={dossier.strategic_pressure_score || 0} max={100} />
-                    <span className="text-xs text-zinc-500 font-medium tracking-wide">
-                        Strategic Pressure
-                    </span>
+                {/* Right: Lead Score (replaces gauge) */}
+                <div className="flex flex-col items-center gap-2 sm:pl-4 sm:border-l sm:border-white/5">
+                    <LeadScoreBadge score={total} />
+                    <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-medium">
+                        <TrendingUp size={10} />
+                        <span>Engagement Signal</span>
+                    </div>
                 </div>
             </div>
 
@@ -127,13 +136,15 @@ export default function SummaryCard({ data }) {
     );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, highlight }) {
     return (
         <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 mb-0.5">
                 {label}
             </p>
-            <p className="text-sm text-zinc-200 font-medium leading-snug">{value}</p>
+            <p className={`text-sm font-medium leading-snug ${highlight ? "text-accent" : "text-zinc-200"}`}>
+                {value}
+            </p>
         </div>
     );
 }

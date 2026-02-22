@@ -70,7 +70,6 @@ function WatchlistToggle({ data, isWatched, onAdd, onRemove, watchlistId }) {
                 industry: data?.dossier?.industry || "Unknown",
                 classification: data?.classification || "Not Priority",
                 lead_score: data?.lead_score?.total || 0,
-                strategic_pressure: data?.dossier?.strategic_pressure_score || 0,
             });
         }
         setBusy(false);
@@ -160,8 +159,8 @@ export default function App() {
                 }}
             />
             {/* Gradient orbs */}
-            <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none z-0" />
-            <div className="fixed bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0" />
+            <div className="fixed top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0" style={{ background: 'radial-gradient(circle, rgba(110,231,183,0.10) 0%, transparent 70%)' }} />
+            <div className="fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0" style={{ background: 'radial-gradient(circle, rgba(244,114,182,0.09) 0%, transparent 70%)' }} />
 
             <AnimatePresence>{loading && <LoadingOverlay />}</AnimatePresence>
 

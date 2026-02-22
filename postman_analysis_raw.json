@@ -1,0 +1,52 @@
+{
+  "mode": "DOMAIN",
+  "domain": "postman.com",
+  "threshold": "medium",
+  "company_dossier": {
+    "industry": "SaaS",
+    "business_stage": "Mature",
+    "hiring_intensity": "Moderate",
+    "signal_count": 0,
+    "growth_signals": [],
+    "scale_signals": [],
+    "trigger_events": [],
+    "strategic_pressure_score": 50
+  },
+  "strategic_bottlenecks": [
+    {
+      "title": "Platform governance and cross-service integration friction",
+      "evidence": "Inferred from Mature business stage and high structural complexity (50/100)",
+      "severity": "Medium",
+      "mapped_service": "AI Automation & Governance"
+    }
+  ],
+  "lead_score": {
+    "scores": {
+      "industry_fit": 20,
+      "budget_signals": 20,
+      "growth_triggers": 16,
+      "bottleneck_severity": 15,
+      "service_alignment": 20
+    },
+    "total": 85,
+    "classification": "Strong Lead",
+    "has_trigger_event": false,
+    "strategic_pressure": 50
+  },
+  "why_now": "Classification: Strong Lead. No strong trigger events detected from public sources. Recommend monitoring for future signals.",
+  "personalized_outreach": {
+    "recommended_decision_maker": "CTO / VP Engineering",
+    "key_strategic_angle": "Optimize platform governance and cross-service integration friction via AI Automation & Governance",
+    "outreach_email": "Subject: Thought on postman.com's platform governance and cross-service integration friction\n\nHi,\n\nI've been following postman.com's trajectory in the SaaS space \u2014 the mature-stage momentum is impressive. Given postman.com's position as a mature-stage player in SaaS,\n\nOne pattern we see with companies at your scale: platform governance and cross-service integration friction often creates friction that compounds as you grow. Our AI Automation & Governance practice has helped similar teams reduce that friction without disrupting existing workflows.\n\nWould it make sense to share a brief case study that's relevant to your current trajectory? No commitment \u2014 just seeing if there's alignment.\n\nBest regards",
+    "closing_question": "Would it make sense to share a brief case study relevant to your current trajectory?",
+    "tone": "Professional advisory \u2014 no aggressive selling"
+  },
+  "agent_research_trace": [
+    "Analyzed postman.com",
+    "Classification: Enterprise / Global (Mature)",
+    "Detected 0 strategic events",
+    "Complexity Signals: Product(20), Ent(6), Geo(5), Tech(12)",
+    "Pressure Score: 50/100",
+    "Generated outreach targeting CTO / VP Engineering"
+  ]
+}

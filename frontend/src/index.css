@@ -1,36 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-background text-zinc-100 antialiased selection:bg-primary/30;
+    @apply bg-background text-slate-100 antialiased selection:bg-primary/30;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Stronger base text contrast */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-white;
+  }
+
+  p,
+  span,
+  li {
+    @apply text-slate-200;
   }
 }
 
 @layer components {
+
+  /* Glass card — brighter border, more visible surface */
   .glass-card {
-    @apply bg-card/40 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl;
+    @apply bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-2xl;
+    box-shadow:
+      0 0 0 1px rgba(110, 231, 183, 0.06),
+      0 4px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-card:hover {
+    border-color: rgba(110, 231, 183, 0.25);
+    box-shadow:
+      0 0 0 1px rgba(110, 231, 183, 0.12),
+      0 8px 40px rgba(0, 0, 0, 0.6);
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
 
   .btn-primary {
-    @apply bg-primary text-white px-6 py-3 rounded-xl font-medium transition-all hover:bg-primary-hover hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/20;
+    @apply bg-primary text-gray-900 px-6 py-3 rounded-xl font-bold transition-all hover:bg-primary-hover hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/30;
   }
 
   .input-field {
-    @apply bg-zinc-900 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+    @apply bg-[#1e2a3a] border border-border text-white placeholder:text-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all;
+  }
+
+  /* Stat labels — much more visible */
+  .stat-label {
+    @apply text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5;
+  }
+
+  .stat-value {
+    @apply text-sm font-semibold text-white leading-snug;
+  }
+
+  /* Section headers */
+  .section-heading {
+    @apply text-xs font-bold uppercase tracking-widest text-slate-400;
   }
 }
 
+/* ── Scrollbar ─────────────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-zinc-700/50 rounded-full;
+  background: rgba(110, 231, 183, 0.25);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 231, 183, 0.45);
+}
+
+/* ── Global glow orbs ─────────────────────────────── */
+.orb-primary {
+  background: radial-gradient(circle, rgba(110, 231, 183, 0.12) 0%, transparent 70%);
+}
+
+.orb-accent {
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.10) 0%, transparent 70%);
 }

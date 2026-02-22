@@ -35,7 +35,6 @@ function WatchlistToggle({ company, isWatched, onAdd, onRemove, watchlistId }) {
                 industry: company.industry || "Unknown",
                 classification: company.revenue_likelihood || "Not Priority",
                 lead_score: 0,
-                strategic_pressure: 0,
             });
         }
         setBusy(false);

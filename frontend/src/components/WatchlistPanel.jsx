@@ -120,10 +120,6 @@ export default function WatchlistPanel({ watchlist, onRemove, onScanNow, loading
                                             <div className="text-sm font-bold text-primary">{Math.round(entry.lead_score)}<span className="text-zinc-600 text-xs">/100</span></div>
                                         </div>
                                         <div>
-                                            <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5 font-semibold">Pressure</div>
-                                            <div className="text-sm font-bold text-accent">{Math.round(entry.strategic_pressure)}<span className="text-zinc-600 text-xs">/100</span></div>
-                                        </div>
-                                        <div>
                                             <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5 font-semibold">Last Scan</div>
                                             <div className="flex items-center gap-1 text-xs text-zinc-400">
                                                 <Clock size={10} />

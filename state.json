@@ -1,58 +1,61 @@
 {
-    "target_domain": "druva.com",
+    "target_domain": "postman.com",
     "dossier": {
         "tech_stack": [
-            "Cloud-native SaaS (100% SaaS — no on-premise)",
-            "AWS (EC2, RDS, Lambda, Bedrock) & Microsoft Azure",
-            "Python, Go, C/C++, Java, NodeJS",
-            "AI/ML: Amazon Bedrock, LLMs, Multi-agent AI Copilot (DruAI)",
-            "Microfrontend architecture migration in progress",
-            "CEO target: 33% of code written by AI by end-2025"
+            "REST API lifecycle platform — Design, Test, Monitor, Flows, Agent Builder, Spec Hub, Insights (7+ product modules)",
+            "Node.js, Electron (desktop app), Go (backend services)",
+            "AWS (primary cloud), GCP integrations",
+            "AI Agent Builder: integrates OpenAI, Anthropic, Meta LLMs + 18,000+ APIs",
+            "Model Context Protocol (MCP) servers for AI agent governance",
+            "Liblab (acquired Nov 2025): SDK-as-a-service, automated SDK generation from OpenAPI specs",
+            "Postman Flows: visual no-code API orchestration layer",
+            "Postman Insights: real-time API observability plane (launched 2025)"
         ],
         "pivots": [
-            "Strategic partnership with Microsoft Azure (March 2025) — storing backups in Azure data centers",
-            "Launch of ReconX Labs for threat intelligence",
-            "Threat Watch product launch (January 2026) — proactive continuous threat monitoring",
-            "FedRAMP Moderate expansion for public sector (April 2025)",
-            "Shift from 'data protection' to 'cyber resilience' positioning",
-            "Cohesity-Veritas merger intensifying competitive pressure",
-            "New CFO (Jagroop Bal) appointed February 2025 — fiscal restructuring signal",
-            "Expanded Microsoft Entra ID + Azure VM cyber recovery (November 2025)"
+            "AI Agent Builder launch (January 2025) — full platform pivot to AI-first developer tools",
+            "liblab acquisition (November 2025) — SDK-as-a-service integration into lifecycle platform",
+            "Spec Hub launch (2025) — bidirectional spec sync and governance reporting for enterprise",
+            "Postman Insights launch (2025) — real-time observability for human + AI API interactions",
+            "Free-tier restrictions tightened (2024-2025) — monetization acceleration push",
+            "July 2024 layoffs: JSON Schema and AsyncAPI teams cut — signal of AI-first refocus",
+            "Agent Mode (beta, 2025) — natural language-driven workflow automation for enterprise"
         ],
         "fiscal_signals": [
-            "Series H: $147M at $2B valuation (Viking Global Investors)",
-            "Total raised: $475M across 10 rounds",
-            "Surpassed $200M SaaS ARR (August 2023), estimated ~$300M current revenue",
-            "Subsidiary revenue: Druva Europe $23.1M, Druva India $49.7M (March 2025)",
-            "No new funding since Series H — operating on existing runway",
-            "Consumption-based pricing via 'Druva Credits' model",
-            "Named 2025 Gartner Magic Quadrant Leader (first pure-SaaS vendor in category)"
+            "Series E: $225M at $6.5B valuation (October 2025)",
+            "Total raised: $434M across 6 rounds",
+            "Estimated ARR: ~$506M (GrowJo estimate)",
+            "April 2025 total funding report: $433M recent round",
+            "65% of orgs now generate revenue from APIs (Postman 2025 State of API Report)",
+            "Series D: $225M at $5.6B (2021) — major valuation acceleration over 4 years"
         ],
         "hiring_signals": [
-            "CEO stated 'muted' entry-level hiring — AI replacing junior coding tasks",
-            "High demand for domain experts in data security and cloud architecture",
-            "Active hiring: ML Engineers, Cloud Security Engineers, SDETs, Engineering Managers",
-            "SVP Engineering Aalop Shah leading scaling efforts"
+            "Heavy SRE and Platform Engineer hiring in Q4 2025 — confirming liblab integration strain",
+            "AI/ML Engineers for Agent Builder enterprise rollout",
+            "Sales and Operations expansion funded by Series E",
+            "Rohit Lakhotia (Software Engineer) departed January 2025"
         ],
         "competitive_context": [
-            "Gartner MQ Leader 2025 — first 100% SaaS vendor in Backup & Data Protection",
-            "Competitors: Veeam (market share leader), Commvault (cyber resilience pivot), Cohesity+Veritas (merged entity now #1 by share)",
-            "Veeam noted as 'reactive' by Gartner — Druva has innovation positioning advantage",
-            "Cohesity-Veritas merger creates a new mega-competitor (largest by market share)",
-            "Data protection market: $172.67B (2025) → $656.47B (2034)"
+            "40M+ developers on Postman — largest API platform user base globally",
+            "Competes with: SwaggerHub (SmartBear), Insomnia (Kong), Bruno (OSS), API Fortress",
+            "Governance gap: only 24% of devs build AI-ready APIs (Postman's own 2025 report)",
+            "Microsoft MCP server integration signals ecosystem expansion",
+            "IPO narrative pressure at $6.5B valuation — needs $1B ARR path credibly demonstrated"
         ]
     },
     "verdict": {
         "status": "STRONG LEAD",
-        "why_now": "Druva is at a triple inflection: (1) Their CEO has mandated 33% AI-generated code, creating immediate demand for AI workflow modernization tools. (2) The Cohesity-Veritas merger just created a new market-share leader, pressuring Druva to accelerate innovation velocity. (3) The new CFO appointment (Feb 2025) signals fiscal restructuring — they need to demonstrate ROI on their $475M raised without burning additional runway. DataVex's Legacy Modernization AI directly addresses the AI code migration mandate, while Market Intelligence Agent can power their SDR scaling as they push the Azure partnership.",
-        "catalog_match": "Legacy Modernization AI (directly supports the CEO's 1/3 AI-code mandate and microfrontend migration) + Market Intelligence Agent (to scale partner-led GTM for the Azure co-sell motion without proportional headcount)"
+        "lead_score": 81,
+        "go_no_go": "GO",
+        "why_now": "Postman is experiencing a triple-pressure moment: (1) The liblab acquisition (Nov 2025) created an immediate M&A data integration engineering problem — merging SDK generation pipelines with Spec Hub and Agent Builder while simultaneously rolling out Agent Mode for enterprise. DataVex's Data Engineering & Pipelines service is a direct fit for this post-acquisition unification challenge. (2) The Series E ($225M, $6.5B valuation) has activated a hard growth mandate — they need to convert 40M free users to enterprise at scale. DataVex's Market Intelligence Agent can power high-velocity enterprise SDR outreach without proportional headcount. (3) The platform governance gap (only 24% of devs building AI-ready APIs per Postman's own report) creates pressure on Postman's own Agent Builder success — they face the same governance problem internally. DataVex's AI Automation service addresses cross-system workflow standardization.",
+        "catalog_match": "PRIMARY: Data Engineering & Pipelines (liblab M&A integration — merging SDK generation pipelines with Spec Hub/Agent Builder) | SECONDARY: DevOps Optimization (7-product deployment surface, multi-product complexity) | TERTIARY: Market Intelligence Agent (Series E growth mandate, enterprise GTM scaling)"
     },
     "research_trace": [
-        "Phase 1: OSINT search for Druva funding/revenue — found $475M total raised, $2B valuation, $200M+ ARR growing to ~$300M.",
-        "Phase 2: Hiring trends — CEO Jaspreet Singh's AI-first mandate ('muted' hiring), demand for domain experts, ML engineers.",
-        "Phase 3: Product launches — Threat Watch (Jan 2026), Azure expansion, FedRAMP, DruAI integration.",
-        "Phase 4: Leadership mapping — CEO Jaspreet Singh, CTO Stephen Manley, CDO Milind Borate, SVP Eng Aalop Shah, new CFO Jagroop Bal (Feb 2025).",
-        "Phase 5: Competitive analysis — Gartner MQ Leader 2025, Cohesity-Veritas merger threat, Veeam market-share dominance.",
-        "Phase 6: Signal mapping to DataVex catalog — Legacy Modernization AI fits AI-code mandate, Market Intelligence Agent fits partner GTM scaling."
+        "Phase 1 — Researcher Agent: Query 'Postman API platform technical debt infrastructure modernization 2024 2025' → Found: 7+ product module architecture, collection-runner vs. AI observability architectural tension, Postman Insights as architectural rewrite signal.",
+        "Phase 2 — Researcher Agent: Query 'Postman company layoffs funding leadership changes product pivot 2024 2025' → Found: July 2024 layoffs (JSON Schema/AsyncAPI teams), AI Agent Builder launch Jan 2025, liblab acquisition Nov 2025, Series E $225M Oct 2025.",
+        "Phase 3 — Researcher Agent: Query 'Postman API platform earnings revenue valuation fiscal pressure 2024 2025' → Found: ~$506M ARR, $6.5B valuation, free-tier restrictions tightened, 65% of orgs generating API revenue.",
+        "Phase 4 — Researcher Agent: Query 'Postman liblab acquisition November 2025 integration strategy API lifecycle' → Found: SDK generation pipeline must sync with Spec Hub + Agent Builder, ETL latency risk, documentation sync complexity, 40M developers to benefit.",
+        "Phase 5 — Researcher Agent: Query 'Postman AI Agent Builder platform governance enterprise multi-product complexity 2025' → Found: 24% AI-ready API stat, Spec Hub governance gap, Postman Insights observability gap, Agent Mode enterprise beta.",
+        "Phase 6 — Analyst Agent: Signal mapping → liblab M&A = Data Engineering & Pipelines (direct); 7-product complexity = DevOps Optimization (secondary); AI governance gap = AI Automation (tertiary). Lead Score computation: Urgency 28/30 + Tech Fit 25/30 + Fiscal 18/20 + Timing 10/20 = 81/100.",
+        "Phase 7 — Strategist Agent: Target = Ankit Sobti (CTO, liblab integration is CTO-level architectural decision). Hook = liblab data pipeline risk (specific, time-sensitive, avoids generic AI transformation narrative). Outreach tone = Advisory/peer-level technical."
     ]
 }

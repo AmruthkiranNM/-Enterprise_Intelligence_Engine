@@ -237,28 +237,28 @@ def _detect_product_complexity(full_text: str) -> int:
     intensity = 0
     if "products" in text_lower or "solutions" in text_lower:
         intensity += 2
-    # Count distinct service-like names (manual check for SaaS commonality)
-    intensity += len(re.findall(r" (app|api|cloud|automated|managed) ", text_lower)) // 5
+    # Count distinct service-like names
+    intensity += len(re.findall(r"\b(app|api|cloud|automated|managed|platform)\b", text_lower)) // 3
     return min(intensity, 10)
 
 def _detect_enterprise_exposure(full_text: str) -> int:
     """Detect enterprise-grade indicators."""
     text_lower = full_text.lower()
-    enterprise_keywords = ["fortune 500", "global clients", "trusted by", "soc2", "compliance", "iso 27001", "enterprise-grade"]
+    enterprise_keywords = ["fortune 500", "global clients", "trusted by", "soc2", "compliance", "iso 27001", "enterprise-grade", "global brands"]
     count = sum(1 for kw in enterprise_keywords if kw in text_lower)
     return min(count * 3, 15)
 
 def _detect_geographical_presence(full_text: str) -> int:
     """Detect global/regional footprint."""
     text_lower = full_text.lower()
-    geo_keywords = ["global offices", "offices in", "worldwide", "international", "subsidiaries", "across the globe"]
+    geo_keywords = ["global offices", "offices in", "worldwide", "international", "subsidiaries", "across the globe", "global presence"]
     count = sum(1 for kw in geo_keywords if kw in text_lower)
     return min(count * 5, 15)
 
 def _detect_technical_depth(full_text: str) -> int:
     """Detect technical surface area (APIs, SDKs, Docs)."""
     text_lower = full_text.lower()
-    tech_keywords = ["api docs", "developer", "sdk", "documentation", "integrations", "webhooks", "uptime", "latency"]
+    tech_keywords = ["api docs", "developer", "sdk", "documentation", "integrations", "webhooks", "uptime", "latency", "developer portal"]
     count = sum(1 for kw in tech_keywords if kw in text_lower)
     return min(count * 3, 15)
 
@@ -345,12 +345,14 @@ def build_dossier(domain: str) -> Dict[str, Any]:
     }
 
 def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Strict bottleneck detection — only if evidence converges."""
+    """Strict bottleneck detection — with logical inference for mature firms."""
     bottlenecks = []
     growth = dossier.get("growth_signals", [])
     scale = dossier.get("scale_signals", [])
     triggers = dossier.get("trigger_events", [])
     pressure = dossier.get("strategic_pressure_score", 0)
+    industry = dossier.get("industry", "").lower()
+    stage = dossier.get("business_stage", "Stable")
     
     # Rules for convergence
     has_funding = any("funding" in s.lower() for s in growth + triggers)
@@ -376,13 +378,31 @@ def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
             "mapped_service": "Legacy Modernization AI"
         })
 
-    # If no bottlenecks
+    # 3. LOGICAL INFERENCE: Mature SaaS/Enterprise Scaling
+    if not bottlenecks and stage in ("Growth", "Mature") and any(t in industry for t in ["saas", "fintech", "enterprise"]):
+        # Infer specific pain points for mature platforms
+        if dossier.get("strategic_pressure_score", 0) > 40:
+            bottlenecks.append({
+                "title": "Platform governance and cross-service integration friction",
+                "evidence": f"Inferred from {stage} business stage and high structural complexity ({pressure}/100)",
+                "severity": "Medium",
+                "mapped_service": "AI Automation & Governance"
+            })
+        else:
+            bottlenecks.append({
+                "title": "Standard enterprise operational debt at scale",
+                "evidence": f"Inferred from {stage} maturity and industry complexity",
+                "severity": "Low",
+                "mapped_service": "Digital Transformation & Process Automation"
+            })
+
+    # If still no bottlenecks (fallback for local firms)
     if not bottlenecks:
         bottlenecks.append({
-            "title": "No Strategic Bottlenecks Detected from Public Data",
-            "evidence": "Insufficient evidence of operational strain from current trajectory",
+            "title": "No Acute Strategic Bottlenecks Detected",
+            "evidence": "Trajectory appears stable with low operational complexity detected",
             "severity": "Low",
-            "mapped_service": "N/A"
+            "mapped_service": "Monitoring Only"
         })
         
     return bottlenecks

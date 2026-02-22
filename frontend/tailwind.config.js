@@ -7,15 +7,15 @@ export default {
     theme: {
         extend: {
             colors: {
-                background: "#09090b",
-                card: "#18181b",
-                border: "#27272a",
+                background: "#0d1117",       // deep navy-black (easier on eyes than pure #09090b)
+                card: "#161b27",        // rich dark blue-grey card surface
+                border: "#2d3a52",        // visible blue-tinted border
                 primary: {
-                    DEFAULT: "#6366f1",
-                    hover: "#4f46e5",
+                    DEFAULT: "#6ee7b7",       // bright emerald-cyan — stands out clearly
+                    hover: "#34d399",
                 },
-                accent: "#a855f7",
-                muted: "#71717a",
+                accent: "#f472b6",          // hot pink accent — vibrant, no contrast issues
+                muted: "#94a3b8",          // slate-400 — much more legible than zinc-500
             },
         },
     },

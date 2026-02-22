@@ -37,22 +37,17 @@ def _build_strategic_angle(
     bottlenecks: List[Dict[str, Any]],
 ) -> str:
     """Determine the most compelling strategic angle for outreach."""
-    # Prioritize highest-severity bottleneck
-    high_severity = [b for b in bottlenecks if b.get("severity") == "High"]
-    if high_severity:
+    # Prioritize substantive bottlenecks
+    valid_bottlenecks = [b for b in bottlenecks if "No Strategic Bottlenecks" not in b.get("title")]
+    
+    if valid_bottlenecks:
+        # Sort by severity
+        sorted_b = sorted(valid_bottlenecks, key=lambda x: {"High": 0, "Medium": 1, "Low": 2}.get(x.get("severity"), 3))
         return (
-            f"Address {high_severity[0]['title'].lower()} — "
-            f"mapped to {high_severity[0]['mapped_service']}"
+            f"Optimize {sorted_b[0]['title'].lower()} via {sorted_b[0]['mapped_service']}"
         )
 
-    medium_severity = [b for b in bottlenecks if b.get("severity") == "Medium"]
-    if medium_severity:
-        return (
-            f"Explore {medium_severity[0]['title'].lower()} — "
-            f"potential fit for {medium_severity[0]['mapped_service']}"
-        )
-
-    return "Explore strategic alignment with DataVex service capabilities"
+    return "Optimize operational velocity and scaling efficiency"
 
 
 def _build_outreach_email(
@@ -67,38 +62,31 @@ def _build_outreach_email(
     """
     industry = dossier.get("industry", "Technology")
     stage = dossier.get("business_stage", "Growth")
-    decision_maker = _infer_decision_maker(dossier)
+    
+    # Pick the most relevant bottleneck
+    valid_bottlenecks = [b for b in bottlenecks if b.get("mapped_service") != "Monitoring Only"]
+    primary_bottleneck = valid_bottlenecks[0] if valid_bottlenecks else bottlenecks[0]
 
-    # Pick the most relevant bottleneck for personalization
-    primary_bottleneck = next(
-        (b for b in bottlenecks if b.get("severity") in ("High", "Medium")),
-        bottlenecks[0] if bottlenecks else None,
-    )
-
-    bottleneck_desc = (
-        primary_bottleneck["title"].lower()
-        if primary_bottleneck else "scaling challenges"
-    )
-    mapped_service = (
-        primary_bottleneck.get("mapped_service", "our services")
-        if primary_bottleneck else "our capabilities"
-    )
+    bottleneck_desc = primary_bottleneck["title"].lower()
+    mapped_service = primary_bottleneck.get("mapped_service", "platforms")
 
     trigger_text = ""
     triggers = dossier.get("trigger_events", [])
     if triggers:
-        trigger_text = f" Given your recent {triggers[0].split('—')[0].strip().lower()},"
+        trigger_text = f" Given your recent {triggers[0].split('—')[0].split(':')[0].strip().lower()},"
+    elif stage in ("Growth", "Mature"):
+        trigger_text = f" Given {domain}'s position as a {stage.lower()}-stage player in {industry},"
 
     email = (
-        f"Subject: Quick thought on {domain}'s {bottleneck_desc}\n"
+        f"Subject: Thought on {domain}'s {bottleneck_desc}\n"
         f"\n"
         f"Hi,\n"
         f"\n"
         f"I've been following {domain}'s trajectory in the {industry} space — "
         f"the {stage.lower()}-stage momentum is impressive.{trigger_text}\n"
         f"\n"
-        f"One pattern we see with companies at your stage: {bottleneck_desc} "
-        f"often creates friction that compounds as you scale. "
+        f"One pattern we see with companies at your scale: {bottleneck_desc} "
+        f"often creates friction that compounds as you grow. "
         f"Our {mapped_service} practice has helped similar teams "
         f"reduce that friction without disrupting existing workflows.\n"
         f"\n"
