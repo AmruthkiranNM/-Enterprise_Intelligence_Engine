@@ -71,172 +71,117 @@ IMPACT_SCORES = {
 }
 
 
-# ── Signal detection ──────────────────────────────────────────────────────────
+# ── Live Pipeline Components ──────────────────────────────────────────────────
+from ingestion import NewsIngestor
+from detection import EventDetector
+from scoring import ImpactScorer
 
-def _search_company_news(domain: str, company_name: str) -> List[Dict[str, Any]]:
-    """
-    Search Google News / Bing for recent news about the company.
-    Returns a list of {title, snippet, url} items.
-    Falls back gracefully if the network call fails.
-    """
-    try:
-        import sys, os
-        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-        from company_discovery.search import search_web as _search_web  # type: ignore
-
-        query = f"{company_name} site:{domain} OR \"{company_name}\" funding OR acquisition OR IPO OR hiring 2025 2026"
-        results = _search_web(query)
-        return results if isinstance(results, list) else []
-    except Exception as e:
-        logger.warning("[monitor] news search failed for %s: %s", domain, e)
-        # Fallback: return empty (no false positives)
-        return []
-
-
-def _detect_triggers(news_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Scan news titles and snippets for trigger keywords.
-    Returns list of {event_type, event_summary, severity, impact_score, confidence, keyword}.
-    """
-    detected = []
-    seen_types: set = set()
-
-    for item in news_items:
-        text = (
-            f"{item.get('title', '')} {item.get('snippet', '')} {item.get('body', '')}"
-        ).lower()
-
-        for event_type, keywords in TRIGGER_KEYWORDS.items():
-            if event_type in seen_types:
-                continue
-            for kw in keywords:
-                if kw in text:
-                    severity = SEVERITY_WEIGHTS[event_type]
-                    confidence = "High" if kw in text and len(text) > 100 else "Medium"
-                    detected.append({
-                        "event_type": event_type,
-                        "event_summary": (
-                            f"{item.get('title', 'Signal detected').strip()} — "
-                            f"Keyword: \"{kw}\" detected in recent news."
-                        ),
-                        "severity": severity,
-                        "impact_score": IMPACT_SCORES[severity],
-                        "confidence": confidence,
-                        "source_url": item.get("url", item.get("link", "")),
-                    })
-                    seen_types.add(event_type)
-                    break
-
-    return detected
-
-
-def _build_suggested_action(event_type: str, company_name: str) -> str:
-    templates = {
-        "Funding": (
-            f"Reach out immediately — {company_name} has fresh capital to deploy on tooling and infrastructure. "
-            "Lead with ROI framing and reference their expansion mandate."
-        ),
-        "Acquisition": (
-            f"{company_name} is in integration mode — a prime window for workflow modernization tools. "
-            "Pitch DataVex as the integration intelligence layer."
-        ),
-        "IPO": (
-            f"Post-IPO, {company_name} faces intense investor scrutiny on operational efficiency. "
-            "DataVex's Market Intelligence Agent directly addresses GTM efficiency at scale."
-        ),
-        "Leadership": (
-            f"New leadership at {company_name} means a 90-day window where new executives make vendor decisions. "
-            "Request introductory meeting before their agenda is set."
-        ),
-        "Hiring": (
-            f"{company_name} is scaling fast — their ops and data workflows will strain under growth. "
-            "Suggest DataVex as the automation layer for talent intelligence."
-        ),
-        "Layoffs": (
-            f"{company_name} is restructuring. This is an internal pivot signal — they need efficiency. "
-            "Pitch DataVex as a way to do more with less through AI automation."
-        ),
-        "Legal": (
-            f"{company_name} faces new regulatory/legal pressure. Compliance efficiency is key. "
-            "Focus on DataVex signal validation for risk monitoring."
-        ),
-        "Expansion": (
-            f"{company_name} is entering new markets — outreach intelligence at scale is critical. "
-            "DataVex's Market Intelligence Agent is the top-of-funnel engine they need."
-        ),
-        "Product": (
-            f"A product launch signals R&D velocity at {company_name}. "
-            "DataVex can accelerate their next release cycle with legacy modernization tooling."
-        ),
-    }
-    return templates.get(event_type, f"Engage {company_name} on strategic priorities driven by this event.")
-
+ingestor = NewsIngestor()
+detector = EventDetector()
+scorer = ImpactScorer()
 
 # ── Core scan logic ───────────────────────────────────────────────────────────
 
 def scan_company(entry, db) -> int:
     """
-    Scan a single WatchlistEntry for new trigger events.
-    Creates Alert records. Returns count of new alerts created.
+    Scan a WatchlistEntry using the real Strategic Alert Pipeline.
+    1. Ingest real news (Tavily + RSS)
+    2. Detect strategic triggers
+    3. Score impact analytically
+    4. Persist structured alerts
     """
     from database.models import Alert
+    import json
 
     company_name = entry.company_name
     domain = entry.domain
-    logger.info("[monitor] scanning — %s (%s)", company_name, domain)
+    logger.info("[monitor] live scan initiated — %s (%s)", company_name, domain)
 
-    # Load last snapshot
+    # Load last snapshot to avoid duplicates
     try:
         last_snapshot: List[str] = json.loads(entry.last_trigger_snapshot or "[]")
     except (ValueError, TypeError):
         last_snapshot = []
 
-    # Fetch news
-    news_items = _search_company_news(domain, company_name)
-    new_triggers = _detect_triggers(news_items)
+    # Step 1: Ingest News
+    articles = ingestor.fetch_company_news(company_name, domain)
+    
+    # We also check RSS for any mention (less precise but good for high-visibility)
+    rss_articles = ingestor.fetch_rss_news()
+    for art in rss_articles:
+        if company_name.lower() in art["headline"].lower():
+            art["company"] = company_name
+            articles.append(art)
 
     created = 0
-    new_snapshot = list(last_snapshot)
+    new_snapshot_keys = list(last_snapshot)
 
-    for trigger in new_triggers:
-        # De-duplicate against snapshot
-        snapshot_key = f"{trigger['event_type']}:{trigger['event_summary'][:60]}"
+    for art in articles:
+        # Step 2: Detect Triggers
+        event = detector.detect(art["headline"], art["raw_content"])
+        if not event:
+            continue
+            
+        # Filter by confidence
+        if event["confidence_score"] < 60:
+            continue
+
+        # De-duplicate
+        snapshot_key = f"{event['event_type']}:{art['headline'][:60]}"
         if snapshot_key in last_snapshot:
             continue
 
+        # Step 3: Score Impact
+        impact = scorer.calculate(event["event_type"], event["confidence_score"])
+
+        # Step 4: Persist Alert
         alert = Alert(
             company_name=company_name,
             domain=domain,
-            event_type=trigger["event_type"],
-            event_summary=trigger["event_summary"],
-            severity=trigger["severity"],
-            impact_score=trigger["impact_score"],
-            confidence=trigger["confidence"],
-            suggested_action=_build_suggested_action(trigger["event_type"], company_name),
-            is_read=False,
-            email_sent=False,
+            event_type=event["event_type"],
+            headline=art["headline"],
+            source=art["source"],
+            url=art["url"],
+            event_date=art["published_at"],
+            impact_index=impact["strategic_impact_index"],
+            market_visibility=impact["impact_breakdown"]["market_visibility"],
+            financial_pressure=impact["impact_breakdown"]["financial_pressure"],
+            operational_strain=impact["impact_breakdown"]["operational_strain"],
+            service_alignment=impact["impact_breakdown"]["service_alignment"],
+            severity_label=impact["severity_label"],
+            action_level=impact["action_level"],
+            impact_drivers=json.dumps(impact["impact_drivers"]),
+            strategic_relevance=impact["strategic_relevance"],
+            confidence_score=event["confidence_score"]
         )
+        
         db.add(alert)
-        new_snapshot.append(snapshot_key)
+        new_snapshot_keys.append(snapshot_key)
         created += 1
 
-        # Fire email for High severity
-        if trigger["severity"] == "High":
+        # Email for Critical events
+        if impact["severity_label"] == "Critical Executive Event":
             try:
                 from alerter import send_alert_email
-                db.flush()  # get alert.id
+                db.flush()
+                # Basic backward compat for email builder
+                alert.severity = "High" 
+                alert.event_summary = art["headline"]
+                alert.impact_score = impact["strategic_impact_index"]
+                alert.confidence = str(event["confidence_score"])
+                alert.suggested_action = impact["strategic_relevance"]
                 send_alert_email(alert)
                 alert.email_sent = True
             except Exception as e:
-                logger.warning("[monitor] email for %s failed: %s", company_name, e)
+                logger.warning("[monitor] email failed: %s", e)
 
-    # Update entry metadata
+    # Update entry
     entry.last_scan_at = datetime.datetime.utcnow()
-    entry.last_trigger_snapshot = json.dumps(new_snapshot[-100:])  # keep last 100
+    entry.last_trigger_snapshot = json.dumps(new_snapshot_keys[-100:])
     db.commit()
 
     if created:
-        logger.info("[monitor] %d new alert(s) for %s", created, company_name)
+        logger.info("[monitor] generated %d real strategic alerts for %s", created, company_name)
     return created
 
 

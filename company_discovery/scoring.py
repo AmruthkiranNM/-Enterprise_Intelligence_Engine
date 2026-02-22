@@ -151,173 +151,110 @@ def score_company_domain(
     Categories:
         1. Industry Fit          (0–20)
         2. Budget & Scale        (0–20)  ← threshold-sensitive
-        3. Growth & Triggers     (0–20)
+        3. Growth & Triggers     (0–20)  ← includes complexity detection
         4. Bottleneck Severity   (0–20)
         5. Service Alignment     (0–20)  ← calibrated for enterprise SaaS
 
     Calibration targets:
         Enterprise growth SaaS → 70–90
-        Not below 60 unless evidence genuinely weak
+        Guard Condition: Min 60 floor for qualified Enterprise SaaS targets.
     """
     scores: Dict[str, int] = {}
 
     industry = dossier.get("industry", "").lower()
     pressure = dossier.get("strategic_pressure_score", 0)
     tier = threshold_config.get("tier", "medium")
+    business_type = dossier.get("business_type", "Unknown")
 
     # ── 1. Industry Fit ──────────────────────────────────────
     if any(t in industry for t in ENTERPRISE_INDUSTRIES):
-        scores["industry_fit"] = 18
+        scores["industry_fit"] = 20
     elif industry and industry != "technology":
         scores["industry_fit"] = 12
     else:
         scores["industry_fit"] = 8
 
-    # ── 2. Budget & Scale Signals (threshold-sensitive) ──────
+    # ── 2. Budget & Scale (Complexity-Aware) ─────────────────
     scale_signals = dossier.get("scale_signals", [])
-    has_enterprise = dossier.get("signals", {}).get(
-        "enterprise_clients", {}).get("detected", False)
-    has_funding = dossier.get("signals", {}).get(
-        "funding_mentions", {}).get("detected", False)
-
-    scale_count = len(scale_signals)
-    raw_budget = min(scale_count * 5, 20)
-
-    # Threshold-aware adjustments
-    if tier == "high":
-        # 100Cr+: require strong scale signals
-        if scale_count < 3 and not has_enterprise:
-            raw_budget = min(raw_budget, 8)
-            logger.info("100Cr+ threshold: capping budget to 8 (weak scale)")
-    elif tier == "medium":
-        # 10Cr+: require ≥2 scale signals OR enterprise OR funding
-        if scale_count >= 2 or has_enterprise or has_funding:
-            raw_budget = max(raw_budget, 12)
-        else:
-            raw_budget = max(raw_budget, 6)
-
-    # Enterprise clients + funding boost
+    has_enterprise = business_type == "Enterprise / Global"
+    
+    # Scale score from dossier signals + business stage
+    scale_score = min(len(scale_signals) * 4, 12)
     if has_enterprise:
-        raw_budget = max(raw_budget, 14)
-    if has_funding:
-        raw_budget = min(raw_budget + 3, 20)
+        scale_score = max(scale_score, 15)
+    
+    # Multi-product / Geography / Tech depth boost
+    complexity_boost = 0
+    if pressure > 30: complexity_boost += 5
+    elif pressure > 15: complexity_boost += 3
+    
+    scores["budget_signals"] = min(scale_score + complexity_boost, 20)
 
-    scores["budget_signals"] = min(raw_budget, 20)
-
-    # ── 3. Growth & Trigger Events (deduplicated) ────────────
+    # ── 3. Growth & Triggers (Complexity-Centric) ────────────
     triggers = dossier.get("trigger_events", [])
     growth_signals = dossier.get("growth_signals", [])
-    # Deduplicate: count unique semantic events, not raw list sizes
+    
     unique_events = set()
     for s in triggers + growth_signals:
-        # Normalize to avoid double-counting overlapping descriptions
-        key = s.split(" — ")[0].strip().lower()
+        key = s.split(" — ")[0].split(":")[0].strip().lower()
         unique_events.add(key)
+    
     unique_count = len(unique_events)
-
-    # Diminishing returns curve
-    if unique_count >= 6:
-        growth_score = 17
-    elif unique_count >= 4:
-        growth_score = 15
-    elif unique_count >= 3:
-        growth_score = 13
-    elif unique_count >= 2:
-        growth_score = 10
-    elif unique_count >= 1:
-        growth_score = 6
-    else:
-        growth_score = 0
-
-    # Pressure provides a floor for growth score
-    if pressure >= 4:
-        growth_score = max(growth_score, 10)
-
-    scores["growth_triggers"] = min(growth_score, 20)
+    
+    # Base trigger score
+    trigger_score = min(unique_count * 5, 15)
+    
+    # Growth floor based on pressure (Complexity as growth signal)
+    if pressure >= 25:
+        trigger_score = max(trigger_score, 16)
+    elif pressure >= 15:
+        trigger_score = max(trigger_score, 12)
+        
+    scores["growth_triggers"] = min(trigger_score, 20)
     has_trigger = unique_count > 0
 
     # ── 4. Bottleneck Severity ──────────────────────────────
-    severity_map = {"high": 6, "medium": 4, "low": 2}
+    severity_map = {"high": 8, "medium": 5, "low": 2}
     bottleneck_raw = sum(
         severity_map.get(b.get("severity", "").lower(), 0)
         for b in bottlenecks
     )
 
-    # Pressure-based floor (moderate)
-    if pressure >= 6:
-        bottleneck_raw = max(bottleneck_raw, 12)
-    elif pressure >= 4:
-        bottleneck_raw = max(bottleneck_raw, 8)
+    # Complexity indicates hidden bottlenecks even if not explicit
+    if pressure >= 30:
+        bottleneck_raw = max(bottleneck_raw, 15)
+    elif pressure >= 15:
+        bottleneck_raw = max(bottleneck_raw, 10)
 
-    scores["bottleneck_severity"] = min(bottleneck_raw, 18)
+    scores["bottleneck_severity"] = min(bottleneck_raw, 20)
 
-    # ── 5. Service Alignment (calibrated) ────────────────────
-    aligned_services = set()
-    for b in bottlenecks:
-        svc = b.get("mapped_service", "")
-        if svc and svc != "N/A":
-            aligned_services.add(svc)
-
+    # ── 5. Service Alignment ─────────────────────────────────
+    aligned_services = {b.get("mapped_service", "") for b in bottlenecks if b.get("mapped_service") != "N/A"}
     alignment_count = len(aligned_services)
-
-    # Base: 4 per aligned service (avoids ceiling saturation)
-    alignment_score = min(alignment_count * 4, 18)
-
-    # Enterprise SaaS / FinTech / HealthTech floor: ≥ 12
+    
+    alignment_score = min(alignment_count * 5, 15)
+    
+    # Enterprise Industry boost
     if any(t in industry for t in ENTERPRISE_INDUSTRIES):
-        alignment_score = max(alignment_score, 12)
-
-        # Boost for multi-product + cloud-native + enterprise + growth
-        enterprise_boost_signals = 0
+        alignment_score = max(alignment_score, 16)
         if has_enterprise:
-            enterprise_boost_signals += 1
-        if len(growth_signals) >= 2:
-            enterprise_boost_signals += 1
-        if scale_count >= 2:
-            enterprise_boost_signals += 1
-        if any("cloud" in s.lower() or "platform" in s.lower() for s in growth_signals + scale_signals):
-            enterprise_boost_signals += 1
-
-        alignment_score = min(alignment_score + enterprise_boost_signals * 2, 20)
-
-    # Service alignment floor of 10 for any enterprise industry
-    if any(t in industry for t in ENTERPRISE_INDUSTRIES):
-        alignment_score = max(alignment_score, 10)
+            alignment_score = 20
 
     scores["service_alignment"] = alignment_score
 
-    # ── Total & Classification ────────────────────────────────
+    # ── Total Calculation ────────────────────────────────────
     total = sum(scores.values())
 
-    # Threshold cap for 100Cr+: without strong scale, cap at 70
-    if tier == "high" and scale_count < 3 and not has_enterprise:
-        if total > 70:
-            logger.info("100Cr+ without strong scale: capping %d to 70", total)
-            total = 70
+    # ── Guard Condition: Prevents False Negatives ────────────
+    # Minimum floor of 60 for qualified Enterprise SaaS targets
+    if industry == "saas" and has_enterprise and pressure >= 20:
+        if total < 60:
+            logger.info("Enterprise SaaS Guard: lifting score from %d to 60", total)
+            total = 60
 
-    # Trigger cap: if no trigger event → cap at 80
-    if not has_trigger and total > 80:
-        logger.info("No trigger events — capping score from %d to 80", total)
-        total = 80
-
-    # ── Fix 4: Scoring normalization — prevent inflation ─────
-    # Allow 90+ ONLY if: funding evidence + multiple trigger types + multiple high-severity bottlenecks
-    if total > 88:
-        has_funding_trigger = any(
-            any(kw in t.lower() for kw in ["funding", "series", "raised", "capital"])
-            for t in triggers
-        )
-        high_severity_count = sum(
-            1 for b in bottlenecks if b.get("severity", "").lower() == "high"
-        )
-        distinct_trigger_types = len(unique_events)
-
-        if has_funding_trigger and distinct_trigger_types >= 3 and high_severity_count >= 2:
-            total = min(total, 92)  # Hard ceiling even for strongest profiles
-            logger.info("Exceptional profile — capping at %d", total)
-        else:
-            logger.info("Score normalization: capping %d to 88 (insufficient 90+ criteria)", total)
-            total = 88
+    # Normalization (prevent artificial inflation)
+    if not has_trigger and total > 85:
+        total = 85
 
     # Classification
     if total >= 80:
@@ -328,7 +265,7 @@ def score_company_domain(
         classification = "Not Priority"
 
     logger.info(
-        "Domain score: %d/100 → %s | Pressure: %d | Triggers: %d",
+        "Final score: %d/100 -> %s | Pressure: %d | Triggers: %d",
         total, classification, pressure, unique_count,
     )
 

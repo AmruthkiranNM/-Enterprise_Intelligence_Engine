@@ -20,7 +20,7 @@ Base = declarative_base()
 
 def init_db():
     """Create all tables on startup."""
-    from .models import WatchlistEntry, Alert  # noqa: F401 — ensure models are registered
+    from database.models import WatchlistEntry, Alert  # noqa: F401 — ensure models are registered
     Base.metadata.create_all(bind=engine)
 
 

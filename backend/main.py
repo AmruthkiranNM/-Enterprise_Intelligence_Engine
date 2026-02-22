@@ -144,11 +144,23 @@ class AlertOut(BaseModel):
     company_name: str
     domain: str
     event_type: str
-    event_summary: str
-    severity: str
-    impact_score: float
-    confidence: str
-    suggested_action: Optional[str]
+    headline: str
+    source: Optional[str]
+    url: Optional[str]
+    event_date: datetime.datetime
+    
+    impact_index: float
+    market_visibility: float
+    financial_pressure: float
+    operational_strain: float
+    service_alignment: float
+    
+    severity_label: str
+    action_level: str
+    impact_drivers: str # JSON string from DB
+    strategic_relevance: Optional[str]
+    confidence_score: float
+
     detected_at: datetime.datetime
     is_read: bool
     email_sent: bool

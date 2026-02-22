@@ -108,21 +108,20 @@ def generate_strategic_risk_report(data: Dict[str, Any], output_path: str):
     company_name = dossier.get("company_name") or data.get("domain", "Unknown Company")
     
     # Header
-    elements.append(Paragraph(f"Strategic Risk & Opportunity Intelligence — {company_name}", TITLE_STYLE))
-    elements.append(Paragraph(f"Analysis Date: {datetime.date.today().strftime('%B %d, %Y')}", BODY_STYLE))
+    elements.append(Paragraph(f"Strategic Intelligence Report — {company_name}", TITLE_STYLE))
+    elements.append(Paragraph(f"Generated on {datetime.date.today().strftime('%B %d, %Y')} | DataVex Strategic Engine", BODY_STYLE))
     elements.append(Spacer(1, 0.25 * inch))
 
-    # 1. Executive Intelligence Snapshot (One-page)
-    elements.append(Paragraph("1. Executive Intelligence Snapshot", HEADING_SECTION_STYLE))
+    # 1. Company Intelligence Dossier
+    elements.append(Paragraph("1. Company Intelligence Dossier", HEADING_SECTION_STYLE))
     
     snapshot_data = [
         ["Industry:", dossier.get("industry", "N/A")],
+        ["Business Type:", dossier.get("business_type", "N/A")],
         ["Business Stage:", dossier.get("business_stage", "N/A")],
+        ["Hiring Intensity:", dossier.get("hiring_intensity", "N/A")],
         ["Strategic Pressure Score:", f"{dossier.get('strategic_pressure_score', 'N/A')}/100"],
-        ["Total Lead Score:", f"{lead_score.get('total', 'N/A')}/100"],
-        ["Budget Confidence Level:", lead_score.get("budget_confidence", "N/A")],
-        ["Trigger Events:", ", ".join(dossier.get("trigger_events", []) or ["None Detected"])],
-        ["Lead Classification:", lead_score.get("classification") or data.get("classification", "Not Priority")],
+        ["Signal Density:", f"{dossier.get('signal_count', 0)} detected signals"],
     ]
     
     t_snap = Table(snapshot_data, colWidths=[2 * inch, 4.5 * inch])
@@ -135,35 +134,78 @@ def generate_strategic_risk_report(data: Dict[str, Any], output_path: str):
     elements.append(t_snap)
     elements.append(Spacer(1, 0.15 * inch))
 
-    # Decision Statement
-    decision = "Engage Immediately" if (lead_score.get("total", 0) > 75) else "Monitor"
-    if (lead_score.get("classification") or "").lower() == "not priority": decision = "Deprioritize"
+    # 2. Justified Lead Verdict & Strategic Timing
+    elements.append(Paragraph("2. Justified Lead Verdict & Strategic Timing", HEADING_SECTION_STYLE))
     
-    elements.append(Paragraph(f"<b>Decision Statement:</b> → {decision}", BODY_STYLE))
-    reason = data.get("why_now", "Strategic validation based on converging growth signals and infrastructure maturity gaps.")
-    elements.append(Paragraph(f"<b>Reason:</b> {reason}", BODY_STYLE))
+    classification = lead_score.get("classification") or data.get("classification", "Not Priority")
+    total_score = lead_score.get("total", 0)
+    
+    v_color = "#10b981" if total_score >= 70 else "#f59e0b" if total_score >= 40 else "#ef4444"
+    verdict_style = ParagraphStyle("Verdict", parent=BODY_STYLE, fontName="Helvetica-Bold", textColor=colors.HexColor(v_color), fontSize=11)
+
+    elements.append(Paragraph(f"Engagement Verdict: {classification} ({total_score}/100)", verdict_style))
+    elements.append(Spacer(1, 0.1 * inch))
+    
+    elements.append(Paragraph("<b>Strategic Justification (Why Now?):</b>", SUBHEADING_STYLE))
+    reason = data.get("why_now") or dossier.get("why_now") or "Strategic validation based on converging growth signals and infrastructure maturity gaps."
+    elements.append(Paragraph(reason, BODY_STYLE))
     elements.append(Spacer(1, 0.2 * inch))
 
-    # 2. Signal Matrix
-    elements.append(Paragraph("2. Signal Matrix", HEADING_SECTION_STYLE))
+    # 3. Outreach Strategy Summary
+    elements.append(Paragraph("3. Outreach Strategy Summary", HEADING_SECTION_STYLE))
+    outreach = data.get("personalized_outreach") or data.get("outreach") or {}
+    
+    if outreach:
+        outreach_data = [
+            ["Decision Maker:", outreach.get("recommended_decision_maker", "CTO / VP Engineering")],
+            ["Strategic Angle:", Paragraph(outreach.get("key_strategic_angle", "Modernization & Infrastructure Maturity"), TABLE_CELL_STYLE)],
+            ["Closing Question:", Paragraph(outreach.get("closing_question", "Would it make sense to share a brief case study?"), TABLE_CELL_STYLE)],
+        ]
+        t_out = Table(outreach_data, colWidths=[2 * inch, 4.5 * inch])
+        t_out.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GREY),
+            ('BACKGROUND', (0, 0), (0, -1), HEADER_BG),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        elements.append(t_out)
+    else:
+        elements.append(Paragraph("Outreach not recommended for current lead priority.", BODY_STYLE))
+    elements.append(Spacer(1, 0.2 * inch))
+
+    # 4. Agent Research Journey Trace
+    elements.append(Paragraph("4. Agent Research Journey Trace", HEADING_SECTION_STYLE))
+    trace = data.get("agent_research_trace") or dossier.get("research_trace") or []
+    
+    if trace:
+        for i, step in enumerate(trace):
+            elements.append(Paragraph(f"<b>Step {i+1}:</b> {step}", BODY_STYLE))
+            elements.append(Spacer(1, 0.05 * inch))
+    else:
+        elements.append(Paragraph("No research trace available for this analysis.", BODY_STYLE))
+
+    elements.append(PageBreak())
+
+    # 5. Signal Matrix & Evidence
+    elements.append(Paragraph("5. Signal Matrix & Evidence", HEADING_SECTION_STYLE))
     
     matrix_headers = [
         Paragraph("Category", TABLE_HEADER_STYLE),
         Paragraph("Evidence Detected", TABLE_HEADER_STYLE),
-        Paragraph("Strength (Low/Med/High)", TABLE_HEADER_STYLE),
+        Paragraph("Strength", TABLE_HEADER_STYLE),
         Paragraph("Strategic Impact", TABLE_HEADER_STYLE)
     ]
     
     def get_signal_row(cat, signals_list):
         evidence = "No specific signals found."
         strength = "Low"
-        impact = "Baseline Monitoring"
+        impact = "Monitoring"
         
-        # Look for signal in growth_signals or scale_signals
         for sig in signals_list:
-            if cat.lower().replace(" signals", "").replace(" velocity", "") in sig.lower():
+            if cat.lower()[:5] in sig.lower():
                 evidence = sig
-                strength = "High" if any(x in sig.lower() for x in ["raised", "valuation", "leader", "acquisition", "mandate"]) else "Medium"
+                strength = "High" if any(x in sig.lower() for x in ["raised", "growth", "expansion"]) else "Medium"
                 break
         
         if strength == "High": impact = "Strategic Inflection"
@@ -171,13 +213,13 @@ def generate_strategic_risk_report(data: Dict[str, Any], output_path: str):
         
         return [cat, Paragraph(evidence, TABLE_CELL_STYLE), strength, impact]
 
-    all_signals = dossier.get("growth_signals", []) + dossier.get("scale_signals", [])
+    all_signals = dossier.get("growth_signals", []) + dossier.get("scale_signals", []) + dossier.get("trigger_events", [])
     matrix_data = [matrix_headers]
-    categories = ["Funding Signals", "Hiring Velocity", "Expansion Signals", "Product Evolution", "M&A Activity", "Enterprise Client Signals"]
+    categories = ["Funding", "Hiring", "Expansion", "Product", "M&A", "Enterprise"]
     for c in categories:
         matrix_data.append(get_signal_row(c, all_signals))
 
-    t_matrix = Table(matrix_data, colWidths=[1.4 * inch, 2.7 * inch, 1.2 * inch, 1.2 * inch])
+    t_matrix = Table(matrix_data, colWidths=[1.1 * inch, 3.0 * inch, 1.2 * inch, 1.2 * inch])
     t_matrix.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), PRIMARY_BLUE),
         ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GREY),
@@ -186,8 +228,8 @@ def generate_strategic_risk_report(data: Dict[str, Any], output_path: str):
     ]))
     elements.append(t_matrix)
 
-    # 3. Vulnerability Risk Model
-    elements.append(Paragraph("3. Vulnerability Risk Model", HEADING_SECTION_STYLE))
+    # 6. Technical Vulnerability Model
+    elements.append(Paragraph("6. Technical Vulnerability & Bottlenecks", HEADING_SECTION_STYLE))
     bottlenecks = data.get("strategic_bottlenecks") or data.get("bottlenecks") or []
     
     if not bottlenecks:
@@ -195,12 +237,10 @@ def generate_strategic_risk_report(data: Dict[str, Any], output_path: str):
     else:
         for bn in bottlenecks:
             bn_data = [
-                ["Vulnerability:", Paragraph(bn.get("title", "Infrastructure Strain"), TABLE_CELL_STYLE)],
-                ["Evidence:", Paragraph(bn.get("evidence", bn.get("description", "Inferred from rapid headcount expansion.")), TABLE_CELL_STYLE)],
-                ["Operational Risk Level (1-5):", str(bn.get("risk_score", 3 if bn.get("severity") == "Medium" else 5 if bn.get("severity") == "High" else 2))],
-                ["Financial Risk Exposure:", "High" if bn.get("severity", "Medium") == "High" else "Medium"],
-                ["Time Sensitivity:", "0-6 Months"],
-                ["Probability of Escalation:", "High" if bn.get("severity") == "High" else "Moderate"],
+                ["Vulnerability:", Paragraph(bn.get("title", "Strain"), TABLE_CELL_STYLE)],
+                ["Evidence:", Paragraph(bn.get("evidence", bn.get("description", "Inferred")), TABLE_CELL_STYLE)],
+                ["Mapped Service:", bn.get("mapped_service", "N/A")],
+                ["Severity:", bn.get("severity", "Medium")],
             ]
             t_bn = Table(bn_data, colWidths=[2 * inch, 4.5 * inch])
             t_bn.setStyle(TableStyle([
@@ -212,114 +252,6 @@ def generate_strategic_risk_report(data: Dict[str, Any], output_path: str):
             ]))
             elements.append(t_bn)
             elements.append(Spacer(1, 0.1 * inch))
-            
-        elements.append(Spacer(1, 0.1 * inch))
-        elements.append(Paragraph("<b>Strategic Impact Summary:</b>", SUBHEADING_STYLE))
-        impact_summary = "The convergence of growth signals and infrastructure strain indicates that without immediate workflow modernization, the subject will experience significant operational friction. Downstream consequences include increased technical debt, decreased competitive velocity, and potential GTM inefficiency."
-        elements.append(Paragraph(impact_summary, BODY_STYLE))
-
-    # 4. DataVex Strategic Fit Scoring
-    elements.append(Paragraph("4. DataVex Strategic Fit Scoring", HEADING_SECTION_STYLE))
-    
-    service_defs = [
-        {
-            "id": "market_intel",
-            "name": "Market Intelligence Agent",
-            "alignment": "Manual research and signal fragmentation.",
-            "leverage": "High",
-            "outcome": "Automated engagement nodes.",
-            "trigger_keywords": ["gtm", "sdr", "outreach", "market", "sales"]
-        },
-        {
-            "id": "legacy_mod",
-            "name": "Legacy Modernization AI",
-            "alignment": "Platform technical debt and scaling friction.",
-            "leverage": "Medium",
-            "outcome": "Accelerated release velocity.",
-            "trigger_keywords": ["ai", "legacy", "modernization", "architecture", "microfrontend", "scaling", "infrastructure"]
-        },
-        {
-            "id": "strategic_layer",
-            "name": "Strategic Outreach Layer",
-            "alignment": "Generic executive engagement.",
-            "leverage": "High",
-            "outcome": "ROI-driven conversion lift.",
-            "trigger_keywords": ["ceo", "strategic", "executive", "investment", "board"]
-        }
-    ]
-    
-    bn_texts = " ".join([b.get("title", "") + " " + b.get("evidence", "") for b in bottlenecks]).lower()
-    
-    fit_headers = [Paragraph(h, TABLE_HEADER_STYLE) for h in ["Service", "Relevance Score (0-10)", "Problem Alignment", "Implementation Leverage", "Expected Transformation Outcome"]]
-    fit_data = [fit_headers]
-    
-    for s in service_defs:
-        rel_score = 6 # baseline
-        alignment_note = s["alignment"]
-        
-        for kw in s["trigger_keywords"]:
-            if kw in bn_texts:
-                rel_score += 1
-        
-        rel_score = min(rel_score + (1 if len(bottlenecks) > 2 else 0), 10)
-        
-        if rel_score >= 8:
-            matching_bn = [b.get("title") for b in bottlenecks if any(kw in (b.get("title", "") + b.get("evidence", "")).lower() for kw in s["trigger_keywords"])]
-            if matching_bn:
-                alignment_note = f"Direct alignment with {matching_bn[0]} vulnerability."
-        
-        fit_data.append([
-            s["name"], 
-            f"{rel_score}/10", 
-            Paragraph(alignment_note, TABLE_CELL_STYLE), 
-            s["leverage"], 
-            Paragraph(s["outcome"], TABLE_CELL_STYLE)
-        ])
-        
-    t_fit = Table(fit_data, colWidths=[1.3 * inch, 1.0 * inch, 1.4 * inch, 1.2 * inch, 1.6 * inch])
-    t_fit.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), PRIMARY_BLUE),
-        ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GREY),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('PADDING', (0, 0), (-1, -1), 6),
-    ]))
-    elements.append(t_fit)
-    elements.append(Spacer(1, 0.1 * inch))
-    elements.append(Paragraph(f"<b>Overall Strategic Fit Index (0-100):</b> {int(lead_score.get('total', 0))}", BODY_STYLE))
-
-    # 5. Engagement Timing Model
-    elements.append(Paragraph("5. Engagement Timing Model", HEADING_SECTION_STYLE))
-    
-    timing_data = [
-        ["Trigger Detected?", "YES" if (dossier.get("trigger_events")) else "NO"],
-        ["Strategic Pressure Threshold Crossed?", "YES" if dossier.get("strategic_pressure_score", 0) > 70 else "NO"],
-        ["Infrastructure Maturity Gap?", "Confirmed (via Bottleneck Detection)"],
-    ]
-    t_timing = Table(timing_data, colWidths=[3.25 * inch, 3.25 * inch])
-    t_timing.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 0.5, BORDER_GREY)]))
-    elements.append(t_timing)
-    
-    eng_window = "Immediate (0-3 months)" if decision == "Engage Immediately" else "Near-term (3-6 months)" if decision == "Monitor" else "Long-term (Monitor)"
-    elements.append(Spacer(1, 0.1 * inch))
-    elements.append(Paragraph(f"<b>Engagement Window:</b> {eng_window}", BODY_STYLE))
-    elements.append(Paragraph(f"<b>Evidence:</b> {data.get('why_now', 'High-density signals indicate optimal budget window.')}", BODY_STYLE))
-
-    # 6. Deal Risk Assessment
-    elements.append(Paragraph("6. Deal Risk Assessment", HEADING_SECTION_STYLE))
-    risk_data = [
-        ["Procurement Complexity:", "High (Multi-stakeholder)"],
-        ["Competitive Saturation:", "Medium"],
-        ["Budget Certainty:", lead_score.get("budget_confidence", "Medium")],
-        ["Technical Depth Required:", "High"],
-        ["Sales Cycle Length Estimate:", "6-9 Months"],
-    ]
-    t_risk = Table(risk_data, colWidths=[3.25 * inch, 3.25 * inch])
-    t_risk.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GREY),
-        ('BACKGROUND', (0, 0), (0, -1), HEADER_BG),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-    ]))
-    elements.append(t_risk)
 
     create_pdf(output_path, elements)
 
@@ -330,78 +262,59 @@ def generate_executive_targeting_report(data: Dict[str, Any], output_path: str):
 
     dossier = data.get("company_dossier") or data.get("dossier") or {}
     company_name = dossier.get("company_name") or data.get("domain", "Unknown Company")
+    outreach = data.get("personalized_outreach") or data.get("outreach") or {}
     
     # Title
-    elements.append(Paragraph(f"Executive Targeting & Strategic Engagement Model — {company_name}", TITLE_STYLE))
+    elements.append(Paragraph(f"Engagement Blueprint — {company_name}", TITLE_STYLE))
     elements.append(Paragraph(f"Analysis Date: {datetime.date.today().strftime('%B %d, %Y')}", BODY_STYLE))
     elements.append(Spacer(1, 0.25 * inch))
 
-    # 1. Decision-Maker Relevance Matrix
-    elements.append(Paragraph("1. Decision-Maker Relevance Matrix", HEADING_SECTION_STYLE))
+    # 1. Target Decision Maker
+    elements.append(Paragraph("1. Primary Decision Maker & Target Role", HEADING_SECTION_STYLE))
+    dm_role = outreach.get("recommended_decision_maker", "CTO / VP Engineering")
+    elements.append(Paragraph(f"<b>Recommended Persona:</b> {dm_role}", BODY_STYLE))
     
-    matrix_headers = [Paragraph(h, TABLE_HEADER_STYLE) for h in ["Role", "Strategic Pressure Level", "Budget Authority", "Messaging Angle", "Access Difficulty"]]
+    dm_justification = "Based on detected technical bottlenecks and infrastructure modernization requirements."
+    elements.append(Paragraph(f"<b>Rationale:</b> {dm_justification}", BODY_STYLE))
+    elements.append(Spacer(1, 0.1 * inch))
+
+    # 2. Executive Outreach Strategy
+    elements.append(Paragraph("2. Executive Outreach Strategy", HEADING_SECTION_STYLE))
+    elements.append(Paragraph("<b>Messaging Angle:</b> Advisory / Results-Driven", BODY_STYLE))
+    elements.append(Spacer(1, 0.15 * inch))
+
+    elements.append(Paragraph("<b>Draft Executive Email (~120 words):</b>", SUBHEADING_STYLE))
+    email_text = outreach.get("outreach_email") or "Strategic engagement draft pending priority qualification."
+    elements.append(Paragraph(email_text, BODY_STYLE))
+    elements.append(Spacer(1, 0.2 * inch))
+
+    # 3. Decision-Maker Relevance Matrix
+    elements.append(Paragraph("3. Decision-Maker Relevance Matrix", HEADING_SECTION_STYLE))
+    
+    matrix_headers = [Paragraph(h, TABLE_HEADER_STYLE) for h in ["Role", "Pressure Level", "Budget Authority", "Messaging Angle", "Difficulty"]]
     matrix_data = [
         matrix_headers,
-        ["CEO", "High", "High", "Market Dominance & Efficiency", "High"],
-        ["CTO", "Critical", "High", "Modernization & Technical Debt", "High"],
-        ["VP Engineering", "High", "Medium", "Operational Velocity", "Medium"],
-        ["Head of Data", "Medium", "Medium", "Intelligence Integration", "Low"],
-        ["Head of Platform", "High", "Medium", "Infrastructure Resilience", "Low"],
+        ["CEO", "High", "High", "Market Dominance", "High"],
+        ["CTO", "Critical", "High", "Modernization", "High"],
+        ["VP Engineering", "High", "Medium", "Velocity", "Medium"],
+        ["Platform Head", "High", "Medium", "Resilience", "Low"],
     ]
-    t_dm = Table(matrix_data, colWidths=[1.1 * inch, 1.4 * inch, 1.2 * inch, 1.8 * inch, 1 * inch])
+    t_dm = Table(matrix_data, colWidths=[1.1 * inch, 1.2 * inch, 1.2 * inch, 1.8 * inch, 1.2 * inch])
     t_dm.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), PRIMARY_BLUE),
         ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GREY),
         ('PADDING', (0, 0), (-1, -1), 6),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     elements.append(t_dm)
-
-    # 2. Executive-Level Pain Alignment
-    elements.append(Paragraph("2. Executive-Level Pain Alignment", HEADING_SECTION_STYLE))
-    
-    roles = ["CTO", "CEO", "Head of Platform"]
-    for role in roles:
-        elements.append(Paragraph(f"<b>Role: {role}</b>", SUBHEADING_STYLE))
-        pains = [
-            f"<b>Core Strategic Concern:</b> {'Ensuring platform stability under rapid growth' if role=='CTO' else 'Maximizing market capture speed' if role=='CEO' else 'Infrastructure resilience'}",
-            f"<b>Operational Friction:</b> {'Legacy workflow bottlenecks and technical debt' if role=='CTO' else 'Lack of real-time market signal validation' if role=='CEO' else 'Scaling overhead'}",
-            f"<b>Risk Exposure:</b> {'Systemic reliability escalation' if role=='CTO' else 'Budget inefficiency' if role=='CEO' else 'Deployment lag'}",
-            f"<b>DataVex Entry Angle:</b> {'Strategic modernization layer' if role=='CTO' else 'ROI-driven intelligence engine' if role=='CEO' else 'Automated scaling nodes'}",
-        ]
-        for p in pains:
-            elements.append(Paragraph(f"• {p}", BODY_STYLE))
-        elements.append(Spacer(1, 0.1 * inch))
-
-    # 3. Outreach Strategy Architecture
-    elements.append(Paragraph("3. Outreach Strategy Architecture", HEADING_SECTION_STYLE))
-    elements.append(Paragraph("<b>Approach Type:</b> Advisory / Technical / ROI-driven / Strategic partnership", BODY_STYLE))
-    elements.append(Spacer(1, 0.1 * inch))
-
-    outreach = data.get("personalized_outreach") or {}
-    
-    elements.append(Paragraph("<b>120-word C-suite email:</b>", SUBHEADING_STYLE))
-    elements.append(Paragraph(outreach.get("outreach_email", "Drafting personalized C-suite pitch..."), BODY_STYLE))
-    elements.append(Spacer(1, 0.1 * inch))
-
-    elements.append(Paragraph("<b>80-word Technical leader email:</b>", SUBHEADING_STYLE))
-    tech_pitch = f"Focus on {outreach.get('strategic_angle', 'technical infrastructure modernization')}. Address the detected legacy bottlenecks directly with a high-velocity transition framework. Highlight the reduction in technical debt and gain in release speed."
-    elements.append(Paragraph(tech_pitch, BODY_STYLE))
-    elements.append(Spacer(1, 0.1 * inch))
-
-    elements.append(Paragraph("<b>40-word Follow-up email:</b>", SUBHEADING_STYLE))
-    elements.append(Paragraph("Following up on the strategic brief previously shared. A 10-minute briefing on the 'Modernization Gap' identified in the initial analysis would be impactful for the current roadmap. Best, [Name].", BODY_STYLE))
-    elements.append(Spacer(1, 0.1 * inch))
-
-    elements.append(Paragraph("<b>LinkedIn Connect:</b>", SUBHEADING_STYLE))
-    elements.append(Paragraph(f"Hi [Name], I've been following {company_name}'s recent growth signals. I put together a Strategic Intelligence Memo regarding your infrastructure maturity—would love to share it with you.", BODY_STYLE))
 
     # 4. Multi-Touch Execution Plan
     elements.append(Paragraph("4. Multi-Touch Execution Plan", HEADING_SECTION_STYLE))
     plan_data = [
-        ["Day 1", "Email", "Send Strategic Intelligence Memo to Decision Maker"],
-        ["Day 4", "LinkedIn", "Connection Request + Brief Note referencing news trigger"],
-        ["Day 10", "Email", "Technical follow-up (Deep dive on specific bottleneck)"],
-        ["Day 21", "Alt Channel", "Warm intro attempt or direct executive engagement"],
+        ["Day 1", "Email", "Send Strategic Intelligence Report"],
+        ["Day 4", "LinkedIn", "Connection Request + Research Note"],
+        ["Day 10", "Email", "Technical Follow-up on specific bottleneck"],
+        ["Day 21", "Call", "Direct executive briefing attempt"],
     ]
     t_plan = Table(plan_data, colWidths=[1 * inch, 1.5 * inch, 4 * inch])
     t_plan.setStyle(TableStyle([
@@ -411,16 +324,15 @@ def generate_executive_targeting_report(data: Dict[str, Any], output_path: str):
         ('PADDING', (0, 0), (-1, -1), 6),
     ]))
     elements.append(t_plan)
-    elements.append(Spacer(1, 0.1 * inch))
-    elements.append(Paragraph("<b>Channel Mix:</b> Email / LinkedIn / Warm intro / Event alignment", BODY_STYLE))
+    elements.append(Spacer(1, 0.2 * inch))
 
-    # 5. Contact Intelligence
-    elements.append(Paragraph("5. Contact Intelligence", HEADING_SECTION_STYLE))
-    elements.append(Paragraph("<b>Decision Maker:</b> " + outreach.get("recommended_decision_maker", "Identifying..."), BODY_STYLE))
-    elements.append(Spacer(1, 0.05 * inch))
+    # 5. Research Journey Trace Summary
+    elements.append(Paragraph("5. Research Journey Trace Summary", HEADING_SECTION_STYLE))
+    trace = data.get("agent_research_trace") or dossier.get("research_trace") or []
+    if trace:
+        elements.append(Paragraph("The analysis was conducted through a multi-step strategic research process:", BODY_STYLE))
+        elements.append(Spacer(1, 0.05 * inch))
+        for step in trace[:5]: # Show top 5 steps
+            elements.append(Paragraph(f"• {step}", BODY_STYLE))
     
-    # No fabrication rule
-    elements.append(Paragraph("<b>Verified Executive Email:</b> No verified public executive email found.", BODY_STYLE))
-    elements.append(Paragraph("<b>Recommendation:</b> Hunter.io / Apollo / LinkedIn Sales Navigator", BODY_STYLE))
-
     create_pdf(output_path, elements)

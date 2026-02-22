@@ -192,7 +192,7 @@ def run_domain_pipeline(
             "industry": dossier["industry"],
             "business_stage": dossier["business_stage"],
             "hiring_intensity": dossier["hiring_intensity"],
-            "signal_count": dossier["signal_count"],
+            "signal_count": dossier.get("signal_count", 0),
             "growth_signals": dossier["growth_signals"],
             "scale_signals": dossier["scale_signals"],
             "trigger_events": dossier["trigger_events"],

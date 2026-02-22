@@ -10,19 +10,23 @@ import {
 } from "lucide-react";
 
 const EVENT_CONFIG = {
-    Funding: { icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", label: "💰 Funding" },
-    Acquisition: { icon: Zap, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/30", label: "🤝 Acquisition" },
-    IPO: { icon: TrendingUp, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", label: "📈 IPO" },
-    Leadership: { icon: Users, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30", label: "👤 Leadership" },
-    Hiring: { icon: Users, color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/30", label: "🚀 Hiring" },
-    Product: { icon: Package, color: "text-indigo-400", bg: "bg-indigo-400/10", border: "border-indigo-400/30", label: "📦 Product" },
-    Expansion: { icon: Globe, color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/30", label: "🌍 Expansion" },
+    "Funding Round": { icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", label: "💰 Funding" },
+    "M&A": { icon: Zap, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/30", label: "🤝 Acquisition" },
+    "IPO": { icon: TrendingUp, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", label: "📈 IPO" },
+    "Leadership Change": { icon: Users, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30", label: "👤 Leadership" },
+    "Hiring": { icon: Users, color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/30", label: "🚀 Hiring" },
+    "Product Launch": { icon: Package, color: "text-indigo-400", bg: "bg-indigo-400/10", border: "border-indigo-400/30", label: "📦 Product" },
+    "Expansion": { icon: Globe, color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/30", label: "🌍 Expansion" },
+    "Regulatory Issue": { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/30", label: "⚖️ Regulatory" },
+    "Layoffs": { icon: Users, color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30", label: "📉 Layoffs" },
+    "Major Partnership": { icon: Globe, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30", label: "🤝 Partnership" },
 };
 
 const SEVERITY_CONFIG = {
-    High: { color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30", dot: "bg-red-400" },
-    Medium: { color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", dot: "bg-amber-400" },
-    Low: { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", dot: "bg-emerald-400" },
+    "Critical Executive Event": { color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30", dot: "bg-red-400" },
+    "Strategic Trigger": { color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", dot: "bg-amber-400" },
+    "Growth Indicator": { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", dot: "bg-emerald-400" },
+    "Informational": { color: "text-zinc-400", bg: "bg-zinc-400/10", border: "border-zinc-400/30", dot: "bg-zinc-400" },
 };
 
 function formatDate(dt) {
@@ -62,18 +66,17 @@ function AlertCard({ alert, onMarkRead, onDelete }) {
             )}
 
             <button className="w-full text-left p-5" onClick={() => setExpanded(e => !e)}>
-                {/* Top row */}
-                <div className="flex items-start gap-3 mb-3">
-                    <div className={`flex-none flex items-center justify-center w-9 h-9 rounded-xl ${ev.bg} border ${ev.border}`}>
-                        <Icon size={15} className={ev.color} />
+                <div className="flex items-start gap-4 mb-4">
+                    <div className={`flex-none flex items-center justify-center w-10 h-10 rounded-xl ${ev.bg} border ${ev.border}`}>
+                        <Icon size={18} className={ev.color} />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-2 mb-1">
+                        <div className="flex items-center flex-wrap gap-2 mb-1.5">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ev.bg} ${ev.color} ${ev.border}`}>
                                 {ev.label}
                             </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${sv.bg} ${sv.color} ${sv.border}`}>
-                                {alert.severity} Severity
+                                {alert.severity_label}
                             </span>
                         </div>
                         <h3 className="text-sm font-bold text-zinc-100">{alert.company_name}</h3>
@@ -85,20 +88,36 @@ function AlertCard({ alert, onMarkRead, onDelete }) {
                     />
                 </div>
 
-                {/* Impact row */}
-                <div className="flex items-center gap-6 mb-3">
-                    <div>
-                        <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5 font-semibold">Impact Score</div>
-                        <div className="text-xl font-black text-primary">{Math.round(alert.impact_score)}<span className="text-zinc-600 text-xs">/100</span></div>
-                    </div>
-                    <div>
-                        <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5 font-semibold">Confidence</div>
-                        <div className="text-sm font-bold text-zinc-300">{alert.confidence}</div>
-                    </div>
+                <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-zinc-100 leading-snug line-clamp-2 mb-1">
+                        {alert.headline}
+                    </h4>
+                    <p className="text-[10px] text-zinc-500 italic">Source: {alert.source || "Web Intel"}</p>
                 </div>
 
-                {/* Summary */}
-                <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">{alert.event_summary}</p>
+                {/* Impact visualization */}
+                <div className="flex items-center gap-10">
+                    <div>
+                        <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1 font-bold">Strategic Impact</div>
+                        <div className="flex items-baseline gap-1">
+                            <div className="text-2xl font-black text-primary">{Math.round(alert.impact_index)}</div>
+                            <div className="text-zinc-600 text-[10px] font-bold uppercase tracking-tighter">Index</div>
+                        </div>
+                    </div>
+                    <div className="flex gap-4 border-l border-zinc-800/80 pl-6">
+                        {Object.entries({
+                            MV: alert.market_visibility,
+                            FP: alert.financial_pressure,
+                            OS: alert.operational_strain,
+                            SA: alert.service_alignment
+                        }).map(([label, val]) => (
+                            <div key={label} className="text-center">
+                                <div className="text-[8px] font-black text-zinc-700 mb-1">{label}</div>
+                                <div className="text-xs font-bold text-zinc-400">{Math.round(val || 0)}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </button>
 
             {/* Expanded: suggested action */}
@@ -111,41 +130,75 @@ function AlertCard({ alert, onMarkRead, onDelete }) {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                     >
-                        <div className="px-5 pb-5 space-y-4">
-                            {alert.suggested_action && (
-                                <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
-                                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold text-primary mb-2">
-                                        <ArrowRight size={10} />
-                                        Suggested Action
+                        <div className="px-5 pb-5 space-y-5">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                                    <div className="text-[9px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Impact Drivers</div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {JSON.parse(alert.impact_drivers || "[]").map(d => (
+                                            <span key={d} className="text-[9px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-700/50">
+                                                {d}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <p className="text-xs text-zinc-300 leading-relaxed">{alert.suggested_action}</p>
                                 </div>
-                            )}
+                                <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                                    <div className="text-[9px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Recommended Action</div>
+                                    <div className="text-[11px] font-bold text-primary italic uppercase tracking-wider">
+                                        {alert.action_level}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
+                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold text-primary mb-2">
+                                    <TrendingUp size={10} />
+                                    Strategic Relevance
+                                </div>
+                                <p className="text-xs text-zinc-300 leading-relaxed italic">
+                                    "{alert.strategic_relevance}"
+                                </p>
+                            </div>
 
                             {/* Action buttons */}
-                            <div className="flex items-center gap-2">
-                                {!alert.is_read && (
+                            <div className="flex items-center justify-between pt-1">
+                                <div className="flex items-center gap-2">
+                                    {!alert.is_read && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onMarkRead(alert.id); }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/50 transition-all"
+                                        >
+                                            <Check size={11} className="text-emerald-400" />
+                                            Mark Read
+                                        </button>
+                                    )}
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); onMarkRead(alert.id); }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/50 transition-all"
+                                        onClick={(e) => { e.stopPropagation(); onDelete(alert.id); }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/20 transition-all"
                                     >
-                                        <Check size={11} className="text-emerald-400" />
-                                        Mark Read
+                                        <Trash2 size={11} />
+                                        Dismiss
                                     </button>
+                                </div>
+
+                                {alert.url && (
+                                    <a
+                                        href={alert.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-hover transition-colors"
+                                    >
+                                        View Source
+                                        <ArrowRight size={12} />
+                                    </a>
                                 )}
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onDelete(alert.id); }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/20 transition-all"
-                                >
-                                    <Trash2 size={11} />
-                                    Dismiss
-                                </button>
                             </div>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.div>
+        </motion.div >
     );
 }
 

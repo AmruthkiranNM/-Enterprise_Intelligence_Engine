@@ -97,588 +97,292 @@ def _extract_text_from_pages(
 # Dossier Builder
 # ════════════════════════════════════════════════════════════════
 
+# ════════════════════════════════════════════════════════════════
+# Website Classification & Scale
+# ════════════════════════════════════════════════════════════════
+
+def _classify_website_scale(full_text: str, subpages: Dict) -> Dict[str, str]:
+    """
+    Determine the type and scale of the business.
+    Outputs: Business Type, Business Stage
+    """
+    text_lower = full_text.lower()
+    
+    # Scale Indicators
+    enterprise_indicators = [
+        "global offices", "worldwide presence", "fortune 500", "enterprise solutions",
+        "nasdaq", "nyse", "publicly traded", "billion dollar", "subsidiaries in",
+        "trusted by", "our clients", "global presence", "international", "global leader"
+    ]
+    regional_indicators = [
+        "serving the tri-state", "midwest leader", "across the region", "metropolitan area",
+        "multiple locations in", "state-wide", "regional leader"
+    ]
+    
+    # Structural Complexity Indicators
+    complexity_keywords = [
+        "api", "sdk", "integrations", "developer", "platform", "multi-product",
+        "ecosystem", "solutions for", "products", "documentation", "docs"
+    ]
+
+    has_enterprise = any(kw in text_lower for kw in enterprise_indicators)
+    has_regional = any(kw in text_lower for kw in regional_indicators)
+    has_complexity = sum(1 for kw in complexity_keywords if kw in text_lower) >= 3
+    
+    # Default to Local/Stable
+    business_type = "Local / Small Business"
+    business_stage = "Stable"
+    
+    if has_enterprise or has_complexity:
+        business_type = "Enterprise / Global"
+        business_stage = "Mature" if has_enterprise else "Growth"
+    elif has_regional or len(subpages) > 4:
+        business_type = "Regional / Scaling"
+        business_stage = "Growth"
+
+    return {
+        "business_type": business_type,
+        "business_stage": business_stage
+    }
+
 def _detect_industry(full_text: str) -> str:
     """Best-effort industry detection from page text."""
     industry_keywords = {
-        "SaaS": ["saas", "software as a service", "cloud platform", "subscription"],
+        "Construction": ["construction", "builder", "contractor", "roofing", "renovation", "residential", "commercial building"],
+        "SaaS": ["saas", "software as a service", "cloud platform", "subscription", "software testing", "developer tool", "platform", "api", "sdk"],
         "FinTech": ["fintech", "payment", "banking", "financial technology", "lending"],
-        "HealthTech": ["healthtech", "health tech", "diagnostic", "medical", "healthcare"],
-        "EdTech": ["edtech", "education technology", "learning platform", "e-learning"],
-        "IT Services": ["it services", "consulting", "technology services", "outsourcing"],
-        "E-commerce": ["e-commerce", "ecommerce", "marketplace", "online store"],
-        "Enterprise Tech": ["enterprise", "b2b", "platform", "infrastructure"],
-        "AI / ML": ["artificial intelligence", "machine learning", "deep learning", "ai-powered"],
-        "Cloud / DevOps": ["cloud", "devops", "kubernetes", "containerization", "ci/cd"],
-        "Data": ["data engineering", "data pipeline", "analytics", "data platform", "big data"],
-        "Logistics Tech": ["logistics", "supply chain", "delivery", "fulfillment"],
+        "HealthTech": ["healthtech", "health tech", "healthcare"],
+        "Professional Services": ["consulting", "legal", "accounting", "advisory"],
+        "E-commerce": ["e-commerce", "ecommerce", "online store", "shop"],
+        "Manufacturing": ["manufacturing", "factory", "production line", "industrial"],
     }
-
     text_lower = full_text.lower()
-    best_match = "Technology"
+    best_match = "Regional Services" if len(text_lower) > 0 else "Unknown"
     best_count = 0
-
     for industry, keywords in industry_keywords.items():
         count = sum(1 for kw in keywords if kw in text_lower)
         if count > best_count:
             best_count = count
             best_match = industry
-
     return best_match
-
 
 def _detect_hiring_intensity(full_text: str, subpages: Dict) -> str:
     """Estimate hiring intensity: Low / Moderate / High."""
     text_lower = full_text.lower()
     careers_page = subpages.get("/careers")
-
     if careers_page:
         careers_text = careers_page.get_text(separator=" ").lower()
-        job_patterns = re.findall(
-            r"(?:apply now|open position|we.re hiring|join us|view role"
-            r"|job opening|current opening|work with us|career)",
-            careers_text
-        )
-        if len(job_patterns) >= 5:
-            return "High"
-        elif len(job_patterns) >= 1:
-            return "Moderate"
-
-    if any(kw in text_lower for kw in [
-        "we're hiring", "join our team", "open roles",
-        "careers", "job opening", "work with us",
-    ]):
+        job_links = len(careers_page.find_all('a', text=re.compile(r'apply|view|open|role|position', re.I)))
+        if job_links >= 5: return "High"
+        if job_links >= 1: return "Moderate"
+    
+    if any(kw in text_lower for kw in ["we're hiring", "careers", "job opening"]):
         return "Moderate"
-
     return "Low"
 
-
 def _detect_growth_signals(full_text: str) -> List[str]:
-    """Identify growth signals from page text."""
+    """Identify growth signals ONLY if explicitly visible."""
     signals = []
     text_lower = full_text.lower()
-
-    growth_indicators = [
-        ("expansion", "Geographic or market expansion mentioned"),
-        ("new office", "New office opening signal"),
-        ("partnership", "Strategic partnership detected"),
-        ("product launch", "New product/feature launch"),
-        ("acquisition", "M&A activity detected"),
-        ("ipo", "IPO or public listing signal"),
-        ("series", "Funding round reference"),
-        ("raised", "Fundraising activity"),
-        ("revenue growth", "Revenue growth mentioned"),
-        ("yoy growth", "Year-over-year growth signal"),
-        ("doubled", "Scale doubling signal"),
-        ("tripled", "3x growth signal"),
-        ("new product", "New product launch detected"),
-        ("launched", "Product/feature launch detected"),
+    
+    # Stricter patterns
+    indicators = [
+        (r"raised \$?\d+ [mb]illion", "Verified large-scale funding"),
+        (r"expanding to.*new (market|region|geography)", "Market expansion confirmed"),
+        (r"opening.*new office", "Physical expansion signal"),
+        (r"acquired\s+[a-z0-9 ]+(inc|corp|ltd)", "Specific M&A activity detected"),
+        (r"\d+%\s+(yoy|year-over-year) growth", "Financial growth reported"),
     ]
-
-    for keyword, description in growth_indicators:
-        if keyword in text_lower:
-            signals.append(description)
-
+    for pattern, desc in indicators:
+        if re.search(pattern, text_lower):
+            signals.append(desc)
     return signals
-
 
 def _detect_scale_signals(full_text: str) -> List[str]:
-    """Identify scale indicators (budget/size proxy). Strict validation."""
+    """Identify scale indicators. No assumptions."""
     signals = []
     text_lower = full_text.lower()
-
-    # Standard scale patterns
-    standard_patterns = [
-        (r"\d{3,}\+?\s*(?:employees|team members|people)", "Large team size"),
-        (r"fortune\s*(?:500|100)", "Fortune 500/100 client base"),
-        (r"(?:global|worldwide|international)\s*(?:presence|operations)", "Global presence"),
-        (r"\$\d+[mb]\b", "Dollar-denominated funding/revenue"),
-        (r"(?:enterprise|global)\s*(?:clients?|customers?)", "Enterprise client base"),
-        (r"(?:\d+)\s*(?:countries|regions|offices)", "Multi-geography operations"),
-        (r"(?:billion|million)\s*(?:dollar|usd|\$)", "Large-scale revenue reference"),
+    patterns = [
+        (r"\b\d{5,}\+?\s+employees\b", "Enterprise-scale workforce"),
+        (r"(nasdaq|nyse|stock exchange)\b", "Publicly listed entity"),
+        (r"offices in \d+ (countries|cities)", "Global/Regional footprint"),
     ]
-
-    for pattern, description in standard_patterns:
-        if re.search(pattern, text_lower, re.IGNORECASE):
-            signals.append(description)
-
-    # ── Fix 1: Strict public listing validation ──────────────
-    # Only include "Publicly listed" if explicit exchange/IPO evidence
-    public_listing_patterns = [
-        r"\bipo\b",
-        r"\bnasdaq\b",
-        r"\bnyse\b",
-        r"\bbse\b",
-        r"\bnse\b",
-        r"stock\s*exchange",
-        r"ticker\s*(?:symbol)?\s*[:=]?\s*[A-Z]{2,5}",
-        r"publicly\s*(?:listed|traded)",
-        r"listed\s*on\s*(?:nasdaq|nyse|bse|nse)",
-    ]
-    if any(re.search(p, text_lower, re.IGNORECASE) for p in public_listing_patterns):
-        signals.append("Publicly listed")
-
+    for pattern, desc in patterns:
+        if re.search(pattern, text_lower):
+            signals.append(desc)
     return signals
 
-
 def _detect_trigger_events(full_text: str) -> List[str]:
-    """
-    Identify trigger events that create strategic urgency.
-
-    Fix 5: Trigger validation — events must reference concrete activity.
-    Generic "raised" alone excluded unless tied to a funding round context.
-    """
+    """Identify concrete trigger events. No generic urgency."""
     triggers = []
     text_lower = full_text.lower()
-
-    # ── Concrete trigger patterns (validated) ────────────────
-    trigger_patterns = [
-        ("new cto", "New CTO appointment — technology direction change"),
-        ("new cfo", "New CFO — fiscal restructuring signal"),
-        ("new ceo", "New CEO — strategic direction change"),
-        ("digital transformation", "Active digital transformation initiative"),
-        ("cloud migration", "Cloud migration underway"),
-        ("cost optimization", "Cost optimization pressure"),
-        ("budget cut", "Fiscal pressure — budget restructuring"),
-        ("downsizing", "Fiscal pressure — operational restructuring"),
-        ("layoff", "Fiscal pressure — workforce reduction"),
-        ("restructuring", "Organizational restructuring"),
-        ("pivot", "Business model pivot — strategic shift"),
-        ("rebranding", "Brand/market pivot detected"),
-        ("new direction", "Strategic direction shift"),
-        ("recently funded", "Recent funding — growth investment incoming"),
-        ("series a", "Series A funding — growth investment"),
-        ("series b", "Series B funding — scale-up investment"),
-        ("series c", "Series C funding — expansion stage"),
-        ("series d", "Series D funding — late-stage growth"),
-        ("series e", "Series E+ funding — pre-IPO stage"),
-        ("acquisition", "M&A activity — integration complexity"),
-        ("acquired", "Company acquired — strategic integration"),
-        ("merger", "Corporate merger — complex system consolidation"),
-        ("new office", "New office expansion — operational scaling"),
-        ("expansion", "Market/geographic expansion initiative"),
-        ("ipo", "IPO — public markets entry"),
-        ("product launch", "Major product launch — platform growth"),
+    events = [
+        (r"new (ceo|cto|cfo) [a-z]+ [a-z]+ joined", "Executive leadership transition"),
+        (r"ipo process", "Active IPO window"),
+        (r"announces merger with", "Strategic merger"),
+        (r"series [a-z] (funding|round) of \$", "Growth stage funding round"),
     ]
-
-    seen_descriptions = set()
-    for keyword, description in trigger_patterns:
-        if keyword in text_lower and description not in seen_descriptions:
-            triggers.append(description)
-            seen_descriptions.add(description)
-
-    # ── Fix 5: "raised" only valid with funding-round context ─
-    if "raised" in text_lower:
-        funding_context = re.search(
-            r"raised\s+\$?\d+|raised.*(?:series|round|seed|funding|million|billion|venture)",
-            text_lower,
-        )
-        if funding_context:
-            desc = "Fundraising activity — capital infusion"
-            if desc not in seen_descriptions:
-                triggers.append(desc)
-                seen_descriptions.add(desc)
-
-    # "launched" only valid with product/feature/platform context
-    if "launched" in text_lower:
-        launch_context = re.search(
-            r"launched\s+(?:a\s+)?(?:new\s+)?(?:product|platform|feature|service|tool|solution)",
-            text_lower,
-        )
-        if launch_context:
-            desc = "Feature/product launch event"
-            if desc not in seen_descriptions:
-                triggers.append(desc)
-                seen_descriptions.add(desc)
-
-    # "ai initiative" only if genuine AI context present
-    if "ai initiative" in text_lower or "ai strategy" in text_lower:
-        desc = "AI adoption initiative"
-        if desc not in seen_descriptions:
+    for pattern, desc in events:
+        if re.search(pattern, text_lower):
             triggers.append(desc)
-            seen_descriptions.add(desc)
-
     return triggers
 
+# ── New Structural Complexity Extraction ────────────────────────
+
+def _detect_product_complexity(full_text: str) -> int:
+    """Detect breadth of product ecosystem."""
+    text_lower = full_text.lower()
+    product_keywords = ["product", "platform", "solution", "suite", "module", "service"]
+    # Look for bulleted lists or distinct mentions
+    intensity = 0
+    if "products" in text_lower or "solutions" in text_lower:
+        intensity += 2
+    # Count distinct service-like names (manual check for SaaS commonality)
+    intensity += len(re.findall(r" (app|api|cloud|automated|managed) ", text_lower)) // 5
+    return min(intensity, 10)
+
+def _detect_enterprise_exposure(full_text: str) -> int:
+    """Detect enterprise-grade indicators."""
+    text_lower = full_text.lower()
+    enterprise_keywords = ["fortune 500", "global clients", "trusted by", "soc2", "compliance", "iso 27001", "enterprise-grade"]
+    count = sum(1 for kw in enterprise_keywords if kw in text_lower)
+    return min(count * 3, 15)
+
+def _detect_geographical_presence(full_text: str) -> int:
+    """Detect global/regional footprint."""
+    text_lower = full_text.lower()
+    geo_keywords = ["global offices", "offices in", "worldwide", "international", "subsidiaries", "across the globe"]
+    count = sum(1 for kw in geo_keywords if kw in text_lower)
+    return min(count * 5, 15)
+
+def _detect_technical_depth(full_text: str) -> int:
+    """Detect technical surface area (APIs, SDKs, Docs)."""
+    text_lower = full_text.lower()
+    tech_keywords = ["api docs", "developer", "sdk", "documentation", "integrations", "webhooks", "uptime", "latency"]
+    count = sum(1 for kw in tech_keywords if kw in text_lower)
+    return min(count * 3, 15)
 
 def build_dossier(domain: str) -> Dict[str, Any]:
-    """
-    Build a comprehensive company dossier from public sources.
-
-    Scrapes homepage + sub-pages, then extracts structured intelligence.
-    Does NOT fabricate any financial data.
-    """
+    """Build a factual dossier with zero-hallucination discipline."""
     base_url = f"https://{domain}" if not domain.startswith("http") else domain
-    logger.info("Building dossier for: %s", base_url)
-
-    # ── Fetch pages ──────────────────────────────────────────
+    logger.info("Factual analysis of: %s", domain)
+    
     homepage_soup = _fetch_page(base_url)
     subpages = _scrape_subpages(base_url)
     full_text = _extract_text_from_pages(homepage_soup, subpages)
-
+    
     if not full_text:
-        logger.warning("Could not fetch any content from %s", domain)
         return {
             "domain": domain,
-            "error": "Could not fetch website content",
-            "industry": "Unknown",
+            "industry": "Insufficient public evidence available",
+            "business_type": "Unknown",
+            "business_stage": "Unknown",
             "hiring_intensity": "Unknown",
             "growth_signals": [],
             "scale_signals": [],
             "trigger_events": [],
-            "signals": {},
+            "signal_count": 0,
             "strategic_pressure_score": 0,
-            "research_trace": ["Attempted homepage fetch — failed"],
+            "research_trace": ["Website content fetch failed."]
         }
 
-    # ── Extract structured intelligence ──────────────────────
-    signals = extract_signals(base_url)
-    signal_count = count_positive_signals(signals)
-
     industry = _detect_industry(full_text)
-    hiring_intensity = _detect_hiring_intensity(full_text, subpages)
-    growth_signals = _detect_growth_signals(full_text)
-    scale_signals = _detect_scale_signals(full_text)
-    trigger_events = _detect_trigger_events(full_text)
+    hiring = _detect_hiring_intensity(full_text, subpages)
+    growth = _detect_growth_signals(full_text)
+    scale = _detect_scale_signals(full_text)
+    triggers = _detect_trigger_events(full_text)
+    classification = _classify_website_scale(full_text, subpages)
 
-    # ── Strategic Pressure Score ────────────────────────────
-    pressure = compute_strategic_pressure(
-        growth_signals, scale_signals, hiring_intensity,
-        signals, trigger_events,
-    )
+    # ── New Strategic Pressure Index (100-point scale) ──────────
+    # 1. Financial Triggers (0-20)
+    financial_score = min(len(growth) * 5 + len(triggers) * 10, 20)
+    
+    # 2. Hiring Intensity (0-15)
+    hiring_score = 0
+    if hiring == "High": hiring_score = 15
+    elif hiring == "Moderate": hiring_score = 7
+    
+    # 3. Product Ecosystem Complexity (0-20)
+    product_score = _detect_product_complexity(full_text) * 2
+    
+    # 4. Enterprise Exposure (0-15)
+    enterprise_score = _detect_enterprise_exposure(full_text)
+    
+    # 5. Multi-Geography Operations (0-15)
+    geo_score = _detect_geographical_presence(full_text)
+    
+    # 6. Technical Infrastructure Depth (0-15)
+    tech_score = _detect_technical_depth(full_text)
+    
+    total_pressure_score = financial_score + hiring_score + product_score + enterprise_score + geo_score + tech_score
+    total_pressure_score = min(total_pressure_score, 100)
 
-    # ── Business stage inference ─────────────────────────────
-    if signal_count >= 5 or pressure >= 6:
-        stage = "Mature"
-    elif signal_count >= 3 or pressure >= 4:
-        stage = "Growth"
-    else:
-        stage = "Early"
+    # Enterprise SaaS Guard: Minimum floor for baseline complexity
+    if industry == "SaaS" and classification["business_type"] == "Enterprise / Global":
+        total_pressure_score = max(total_pressure_score, 15)
 
-    # ── Research trace ───────────────────────────────────────
     trace = [
-        f"Scraped homepage: {base_url}",
+        f"Analyzed {domain}",
+        f"Classification: {classification['business_type']} ({classification['business_stage']})",
+        f"Detected {len(growth) + len(triggers)} strategic events",
+        f"Complexity Signals: Product({product_score}), Ent({enterprise_score}), Geo({geo_score}), Tech({tech_score})",
+        f"Pressure Score: {total_pressure_score}/100"
     ]
-    for path in subpages:
-        trace.append(f"Fetched sub-page: {path}")
-    trace.append(f"Detected industry: {industry}")
-    trace.append(f"Detected {signal_count}/7 revenue-proxy signals")
-    trace.append(f"Hiring intensity: {hiring_intensity}")
-    trace.append(f"Found {len(growth_signals)} growth signal(s)")
-    trace.append(f"Found {len(scale_signals)} scale signal(s)")
-    trace.append(f"Found {len(trigger_events)} trigger event(s)")
-    trace.append(f"Strategic pressure score: {pressure}")
 
-    dossier = {
+    return {
         "domain": domain,
         "industry": industry,
-        "business_stage": stage,
-        "hiring_intensity": hiring_intensity,
-        "growth_signals": growth_signals,
-        "scale_signals": scale_signals,
-        "trigger_events": trigger_events,
-        "signal_count": signal_count,
-        "signals": signals,
-        "strategic_pressure_score": pressure,
+        "business_type": classification["business_type"],
+        "business_stage": classification["business_stage"],
+        "hiring_intensity": hiring,
+        "growth_signals": growth,
+        "scale_signals": scale,
+        "trigger_events": triggers,
+        "signal_count": len(growth) + len(scale) + len(triggers),
+        "strategic_pressure_score": total_pressure_score,
         "research_trace": trace,
-        "_full_text": full_text,  # internal: used by AI gating in detect_bottlenecks
+        "_full_text": full_text
     }
 
-    logger.info("Dossier built: %s (%s, %s stage, %d signals, pressure=%d)",
-                domain, industry, stage, signal_count, pressure)
-
-    return dossier
-
-
-# ════════════════════════════════════════════════════════════════
-# Strategic Pressure Score
-# ════════════════════════════════════════════════════════════════
-
-def compute_strategic_pressure(
-    growth_signals: List[str],
-    scale_signals: List[str],
-    hiring_intensity: str,
-    signals: Dict[str, Dict[str, Any]],
-    trigger_events: List[str],
-) -> int:
-    """
-    Derived metric: strategic_pressure_score.
-
-    Calculation:
-        +1 per growth signal
-        +1 per scale signal
-        +1 if hiring intensity = Moderate
-        +2 if hiring intensity = High
-        +1 if M&A detected
-        +1 if new office expansion detected
-        +1 if enterprise client references detected
-    """
-    score = 0
-
-    # +1 per growth signal
-    score += len(growth_signals)
-
-    # +1 per scale signal
-    score += len(scale_signals)
-
-    # Hiring intensity
-    if hiring_intensity == "High":
-        score += 2
-    elif hiring_intensity == "Moderate":
-        score += 1
-
-    # M&A detection (from trigger events or growth signals)
-    ma_keywords = ["m&a", "acquisition", "acquired", "merger"]
-    if any(any(kw in s.lower() for kw in ma_keywords) for s in trigger_events + growth_signals):
-        score += 1
-
-    # New office expansion
-    office_keywords = ["new office", "expansion"]
-    if any(any(kw in s.lower() for kw in office_keywords) for s in trigger_events + growth_signals):
-        score += 1
-
-    # Enterprise client references
-    has_enterprise = signals.get("enterprise_clients", {}).get("detected", False)
-    if has_enterprise:
-        score += 1
-
-    logger.info("Strategic pressure score: %d", score)
-    return score
-
-
-# ════════════════════════════════════════════════════════════════
-# Bottleneck Detection (Pressure-Inferred)
-# ════════════════════════════════════════════════════════════════
-
-def _pressure_severity(
-    pressure: int,
-    growth_signals: List[str],
-    scale_signals: List[str],
-) -> str:
-    """
-    Map pressure score to severity label.
-
-    Fix 3: Severity normalization — High requires pressure ≥ 6
-    AND ≥ 2 distinct growth signal types AND ≥ 2 scale signal types.
-    Prevents automatic inflation from pressure alone.
-    """
-    if pressure >= 6 and len(growth_signals) >= 2 and len(scale_signals) >= 2:
-        return "High"
-    elif pressure >= 4:
-        return "Medium"
-    return "Low"
-
-
 def detect_bottlenecks(dossier: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Identify strategic/operational bottlenecks from dossier signals.
-
-    Uses strategic_pressure_score for inference — does NOT require
-    explicit weakness language on the company website.
-
-    Each bottleneck maps to a DataVex service.
-    Only returns "No major bottlenecks" if pressure ≤ 2.
-    """
-    bottlenecks: List[Dict[str, Any]] = []
-    signals = dossier.get("signals", {})
-    growth_signals = dossier.get("growth_signals", [])
-    scale_signals = dossier.get("scale_signals", [])
-    trigger_events = dossier.get("trigger_events", [])
-    hiring_intensity = dossier.get("hiring_intensity", "Low")
-    industry = dossier.get("industry", "").lower()
+    """Strict bottleneck detection — only if evidence converges."""
+    bottlenecks = []
+    growth = dossier.get("growth_signals", [])
+    scale = dossier.get("scale_signals", [])
+    triggers = dossier.get("trigger_events", [])
     pressure = dossier.get("strategic_pressure_score", 0)
-    full_text = dossier.get("_full_text", "")
-    severity = _pressure_severity(pressure, growth_signals, scale_signals)
-
-    has_enterprise = signals.get("enterprise_clients", {}).get("detected", False)
-    has_funding = signals.get("funding_mentions", {}).get("detected", False)
-    has_multi_loc = signals.get("multi_location", {}).get("detected", False)
-
-    # ── 0. Technical Debt & Legacy Modernization ─────────────
-    tech_debt_keywords = [
-        "legacy system", "on-premise", "mainframe", "monolith", 
-        "cobol", "java 8", "old versions", "manual process",
-        "outdated infrastructure", "technical debt", "migration from",
-    ]
-    has_tech_debt = any(kw in full_text.lower() for kw in tech_debt_keywords)
     
-    if has_tech_debt:
+    # Rules for convergence
+    has_funding = any("funding" in s.lower() for s in growth + triggers)
+    has_expansion = any("expansion" in s.lower() or "office" in s.lower() for s in growth + scale)
+    has_hiring = dossier.get("hiring_intensity") == "High"
+    
+    # 1. Operational Scaling Risk
+    if has_funding and (has_expansion or has_hiring):
         bottlenecks.append({
-            "title": "Technical debt detected — legacy infrastructure inhibiting agentic scale",
-            "evidence": f"Legacy keywords found in site content, Pressure: {pressure}",
-            "severity": "High" if pressure >= 4 else "Medium",
-            "mapped_service": "Legacy Modernization AI",
+            "title": "Scaling overhead resulting from rapid capital injection and team growth",
+            "evidence": "Converging funding and expansion/hiring signals",
+            "severity": "High" if pressure > 70 else "Medium",
+            "mapped_service": "Digital Transformation & Process Automation"
+        })
+        
+    # 2. Tech Debt / Legacy risk (ONLY if explicit)
+    tech_keywords = ["legacy", "monolith", "on-premise", "technical debt", "migration from"]
+    if any(kw in dossier.get("_full_text", "").lower() for kw in tech_keywords):
+        bottlenecks.append({
+            "title": "Legacy technical debt limiting modernization velocity",
+            "evidence": "Specific legacy infrastructure keywords found in site content",
+            "severity": "Medium",
+            "mapped_service": "Legacy Modernization AI"
         })
 
-    # ── 1. Infrastructure scaling risk ───────────────────────
-    # Inferred when: funding + expansion + enterprise clients
-    funding_evidence = [s for s in trigger_events + growth_signals
-                        if any(kw in s.lower() for kw in
-                               ["funding", "raised", "series", "fundrais"])]
-    expansion_evidence = [s for s in trigger_events + growth_signals
-                          if any(kw in s.lower() for kw in
-                                 ["expansion", "new office", "geographic"])]
-
-    if (funding_evidence or has_funding) and (expansion_evidence or has_multi_loc or has_enterprise):
-        bottlenecks.append({
-            "title": "Infrastructure scaling risk — rapid growth demands exceed current capacity signals",
-            "evidence": (
-                f"Funding signals: {funding_evidence or ['funding_mentions detected']}, "
-                f"Expansion: {expansion_evidence or ['multi-location/enterprise presence']}, "
-                f"Pressure: {pressure}"
-            ),
-            "severity": severity,
-            "mapped_service": "Cloud Modernization",
-        })
-
-    # ── 2. M&A integration complexity ────────────────────────
-    ma_evidence = [s for s in trigger_events + growth_signals
-                   if any(kw in s.lower() for kw in
-                          ["acquisition", "acquired", "m&a", "merger"])]
-    if ma_evidence:
-        bottlenecks.append({
-            "title": "M&A integration complexity — post-acquisition system consolidation needed",
-            "evidence": f"M&A signals: {ma_evidence}, Pressure: {pressure}",
-            "severity": severity,
-            "mapped_service": "Data Engineering & Pipelines",
-        })
-
-    # ── 3. Multi-product DevOps orchestration ────────────────
-    product_evidence = [s for s in growth_signals
-                        if any(kw in s.lower() for kw in
-                               ["product", "launch", "platform", "feature"])]
-    if product_evidence or (has_enterprise and len(growth_signals) >= 2):
-        bottlenecks.append({
-            "title": "Multi-product ecosystem complexity — DevOps orchestration at scale",
-            "evidence": (
-                f"Product signals: {product_evidence or ['enterprise + growth signals']}, "
-                f"Enterprise clients: {has_enterprise}, Pressure: {pressure}"
-            ),
-            "severity": severity,
-            "mapped_service": "DevOps Optimization",
-        })
-
-    # ── 4. AI governance / automation scaling ────────────────
-    # Fix 2: AI bottleneck gating — only generate if explicit AI evidence
-    # Uses word-boundary matching to avoid false positives from substrings
-    ai_gate_keywords = [
-        "ai product", "ai platform", "ai-powered", "ai solution",
-        "machine learning", "ml engineer", "ml platform", "ml pipeline",
-        "deep learning", "ai roadmap", "ai expansion",
-        "artificial intelligence",
-    ]
-
-    # Check 1: AI references in trigger/growth signal descriptions
-    ai_in_signals = any(
-        any(kw in s.lower() for kw in ai_gate_keywords)
-        for s in trigger_events + growth_signals
-    )
-
-    # Check 2: Industry is AI/ML
-    ai_in_industry = any(kw in industry for kw in ["ai", "ml"])
-
-    # Check 3: Explicit AI phrases in page text (word-boundary regex)
-    ai_page_patterns = [
-        r"\bai\s+product", r"\bai\s+platform", r"\bai[- ]powered",
-        r"\bai\s+solution", r"\bmachine\s+learning", r"\bml\s+engineer",
-        r"\bml\s+platform", r"\bml\s+pipeline", r"\bdeep\s+learning",
-        r"\bartificial\s+intelligence", r"\bai\s+roadmap",
-        r"\bai\s+expansion", r"\bai\s+strategy",
-    ]
-    ai_in_text = any(
-        re.search(p, full_text.lower()) for p in ai_page_patterns
-    ) if full_text else False
-
-    # Require at least 2 distinct evidence sources to avoid weak signals
-    ai_evidence_count = sum([ai_in_signals, ai_in_industry, ai_in_text])
-    has_ai_evidence = ai_evidence_count >= 2
-
-    if has_ai_evidence:
-        bottlenecks.append({
-            "title": "AI governance risk — automation scaling without visible ML pipeline governance",
-            "evidence": (
-                f"AI evidence sources: {ai_evidence_count} "
-                f"(signals={ai_in_signals}, industry={ai_in_industry}, page={ai_in_text}), "
-                f"Pressure: {pressure}"
-            ),
-            "severity": severity,
-            "mapped_service": "AI Automation",
-        })
-    # If insufficient AI evidence → no AI bottleneck generated (Fix 2)
-
-    # ── 5. Strategic pressure-inferred scaling complexity ────
-    # Fix 6: Conservative inference — use hedged language
-    if pressure >= 4 and not bottlenecks:
-        bottlenecks.append({
-            "title": "Possible scaling complexity inferred from converging growth and scale signals",
-            "evidence": (
-                f"Strategic pressure: {pressure}, "
-                f"Growth signals: {len(growth_signals)}, "
-                f"Scale signals: {len(scale_signals)}, "
-                f"Hiring: {hiring_intensity}"
-            ),
-            "severity": severity,
-            "mapped_service": "Cloud Modernization",
-        })
-
-    if pressure >= 6 and len(bottlenecks) < 3:
-        bottlenecks.append({
-            "title": "Possible operational strain — growth velocity may exceed infrastructure maturity",
-            "evidence": (
-                f"Strategic pressure: {pressure} (≥6 threshold), "
-                f"Hiring: {hiring_intensity}, "
-                f"Triggers: {len(trigger_events)}"
-            ),
-            "severity": severity,  # Fix 3: use normalized severity, not forced "High"
-            "mapped_service": "Digital Transformation & Process Automation",
-        })
-
-    # ── 6. Expansion without process automation ──────────────
-    if expansion_evidence and has_multi_loc and hiring_intensity != "Low":
-        bottlenecks.append({
-            "title": "Geographic expansion without visible process automation",
-            "evidence": (
-                f"Expansion: {expansion_evidence}, "
-                f"Multi-location: True, Hiring: {hiring_intensity}"
-            ),
-            "severity": severity,
-            "mapped_service": "Digital Transformation & Process Automation",
-        })
-
-    # ── 7. Cost optimization pressure ────────────────────────
-    cost_evidence = [s for s in trigger_events
-                     if any(kw in s.lower() for kw in ["cost", "restructur"])]
-    if cost_evidence:
-        bottlenecks.append({
-            "title": "Cost optimization pressure — operational efficiency gap",
-            "evidence": f"Cost triggers: {cost_evidence}",
-            "severity": "High",
-            "mapped_service": "Data Engineering & Pipelines",
-        })
-
-    # ── Fallback: only if pressure ≤ 2 ──────────────────────
+    # If no bottlenecks
     if not bottlenecks:
-        if pressure <= 2:
-            bottlenecks.append({
-                "title": "No major bottlenecks — insufficient strategic pressure signals",
-                "evidence": f"Strategic pressure: {pressure} (≤2 threshold)",
-                "severity": "Low",
-                "mapped_service": "N/A",
-            })
-        else:
-            # Pressure 3 = moderate; still infer something
-            bottlenecks.append({
-                "title": "Possible moderate scaling complexity — growth signals present but limited evidence",
-                "evidence": (
-                    f"Strategic pressure: {pressure}, "
-                    f"Growth: {len(growth_signals)}, Scale: {len(scale_signals)}"
-                ),
-                "severity": "Medium",
-                "mapped_service": "Cloud Modernization",
-            })
-
-    dossier["research_trace"].append(
-        f"Strategic pressure: {pressure} → "
-        f"Detected {len(bottlenecks)} bottleneck(s) (severity: {severity})"
-    )
-
+        bottlenecks.append({
+            "title": "No Strategic Bottlenecks Detected from Public Data",
+            "evidence": "Insufficient evidence of operational strain from current trajectory",
+            "severity": "Low",
+            "mapped_service": "N/A"
+        })
+        
     return bottlenecks
