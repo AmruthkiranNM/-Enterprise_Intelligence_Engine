@@ -16,3 +16,11 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+#unnecessary files
+.venv/
+__pycache__/
+*.pyc
+frontend/.vite/
+backend/database/
+backend/static/reports/
