@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Globe, MapPin, Loader2, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function AnalysisForm({ onResult, onError, onLoading }) {
+export default function AnalysisForm({ onResult, onError, onLoading, serviceCatalog }) {
     const [mode, setMode] = useState("domain");
     const [domain, setDomain] = useState("");
     const [region, setRegion] = useState("");
@@ -11,15 +11,21 @@ export default function AnalysisForm({ onResult, onError, onLoading }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (mode === "domain" && !serviceCatalog) {
+            onError("Please complete Onboarding first to build your Service Catalog.");
+            return;
+        }
+
         setLoading(true);
         onLoading(true);
 
         try {
             const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000";
-            const endpoint = mode === "domain" ? "/analyze-domain" : "/analyze-region";
+            const endpoint = mode === "domain" ? "/prospect-analysis" : "/analyze-region";
             const body =
                 mode === "domain"
-                    ? { domain, threshold: threshold || null }
+                    ? { prospect_url: domain, service_catalog: serviceCatalog }
                     : { region, threshold };
 
             const res = await fetch(`${apiBase}${endpoint}`, {

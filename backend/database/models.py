@@ -52,3 +52,16 @@ class Alert(Base):
     detected_at    = Column(DateTime, default=datetime.datetime.utcnow)
     is_read        = Column(Boolean, default=False)
     email_sent     = Column(Boolean, default=False)
+
+class ServiceCatalog(Base):
+    """The user's own company service capabilities for gap analysis."""
+    __tablename__ = "service_catalog"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_name   = Column(String(255), nullable=False)
+    company_url    = Column(String(255), nullable=False, unique=True)
+    industry       = Column(String(255), default="Unknown")
+    services       = Column(Text, default="[]") # JSON list
+    tech_expertise = Column(Text, default="[]") # JSON list
+    target_industries = Column(Text, default="[]") # JSON list
+    created_at     = Column(DateTime, default=datetime.datetime.utcnow)

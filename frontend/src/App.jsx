@@ -1,23 +1,20 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Brain, AlertCircle, Search, Eye, Bell } from "lucide-react";
+import { Loader2, Brain, AlertCircle, Search, Eye, Bell, Globe } from "lucide-react";
 import AnalysisForm from "./components/AnalysisForm";
-import SummaryCard from "./components/SummaryCard";
-import LeadScoreChart from "./components/LeadScoreChart";
-import SignalsPanel from "./components/SignalsPanel";
-import BottleneckCards from "./components/BottleneckCards";
-import OutreachStrategy from "./components/OutreachStrategy";
-import ResearchTrace from "./components/ResearchTrace";
+import ProspectCard from "./components/ProspectCard";
 import RegionResultCards from "./components/RegionResultCards";
 import WatchlistPanel from "./components/WatchlistPanel";
 import AlertsPanel from "./components/AlertsPanel";
 import AlertBadge from "./components/AlertBadge";
+import OnboardingPanel, { ServiceCatalogCard } from "./components/OnboardingPanel";
 import { useWatchlist } from "./hooks/useWatchlist";
 import { generateReports, getReportUrl } from "./api";
 import { Download, FileText, Send } from "lucide-react";
 import "./index.css";
 
 const TABS = [
+    { id: "onboarding", label: "Onboarding", icon: Globe },
     { id: "analysis", label: "Analysis", icon: Search },
     { id: "watchlist", label: "Watchlist", icon: Eye },
     { id: "alerts", label: "Alerts", icon: Bell },
@@ -91,7 +88,8 @@ function WatchlistToggle({ data, isWatched, onAdd, onRemove, watchlistId }) {
 }
 
 export default function App() {
-    const [activeTab, setActiveTab] = useState("analysis");
+    const [activeTab, setActiveTab] = useState("onboarding");
+    const [serviceCatalog, setServiceCatalog] = useState(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [mode, setMode] = useState(null);
@@ -140,7 +138,7 @@ export default function App() {
     const regionData = !isDomain && Array.isArray(result) ? result : null;
 
     // For watchlist toggle on domain result
-    const domainStr = domainData?.domain || "";
+    const domainStr = domainData?.prospect_profile?.domain || "";
     const watched = isWatched(domainStr);
     const wlId = watchlistIdFor(domainStr);
 
@@ -148,6 +146,18 @@ export default function App() {
         setActiveTab("alerts");
         fetchAlerts();
     };
+
+    // Auto load service catalog if onboarded previously
+    useState(() => {
+        import("./api").then(({ getServiceCatalog }) => {
+            getServiceCatalog().then(catalog => {
+                if (catalog) {
+                    setServiceCatalog(catalog);
+                    setActiveTab("analysis");
+                }
+            }).catch(() => { });
+        });
+    }, []);
 
     return (
         <div className="min-h-screen bg-background text-zinc-100">
@@ -179,17 +189,17 @@ export default function App() {
                                 <Brain size={16} className="text-white" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
-                                DataVex
+                                Lead Intelligence
                             </span>
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-black text-zinc-100 leading-tight">
-                            Strategic Enterprise{" "}
+                            Autonomous Target{" "}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-                                Intelligence
+                                Discovery Engine
                             </span>
                         </h1>
                         <p className="text-zinc-500 text-sm max-w-lg">
-                            AI-powered market intelligence with continuous lead monitoring.
+                            AI-powered market intelligence with continuous gap analysis.
                         </p>
                     </div>
                     {/* Alert badge */}
@@ -230,8 +240,30 @@ export default function App() {
                     ))}
                 </motion.div>
 
-                {/* ══════════ TAB: ANALYSIS ══════════════════════════════════ */}
+                {/* ══════════ TAB: ONBOARDING ══════════════════════════════════ */}
                 <AnimatePresence mode="wait">
+                    {activeTab === "onboarding" && (
+                        <motion.div
+                            key="onboarding"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            className="space-y-6"
+                        >
+                            {!serviceCatalog ? (
+                                <OnboardingPanel onComplete={(catalog) => { setServiceCatalog(catalog); setActiveTab("analysis"); }} />
+                            ) : (
+                                <div className="space-y-6">
+                                    <ServiceCatalogCard catalog={serviceCatalog} />
+                                    <button onClick={() => setActiveTab("analysis")} className="btn-primary flex items-center gap-2 w-fit">
+                                        Continue to Discovery <Search size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+
+                    {/* ══════════ TAB: ANALYSIS ══════════════════════════════════ */}
                     {activeTab === "analysis" && (
                         <motion.div
                             key="analysis"
@@ -246,6 +278,7 @@ export default function App() {
                                     onResult={handleResult}
                                     onError={handleError}
                                     onLoading={setLoading}
+                                    serviceCatalog={serviceCatalog}
                                 />
                             </div>
 
@@ -338,20 +371,7 @@ export default function App() {
                                                         watchlistId={wlId}
                                                     />
                                                 </div>
-                                                <SummaryCard data={domainData} />
-                                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                                    <div className="lg:col-span-8 space-y-8">
-                                                        <LeadScoreChart data={domainData} />
-                                                        <OutreachStrategy data={domainData} />
-                                                    </div>
-                                                    <div className="lg:col-span-4 space-y-8">
-                                                        <SignalsPanel data={domainData} />
-                                                        <BottleneckCards data={domainData} />
-                                                    </div>
-                                                    <div className="lg:col-span-12">
-                                                        <ResearchTrace data={domainData} />
-                                                    </div>
-                                                </div>
+                                                <ProspectCard data={domainData} />
                                             </>
                                         )}
 

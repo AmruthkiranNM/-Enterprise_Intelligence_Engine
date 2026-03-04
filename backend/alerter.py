@@ -52,7 +52,7 @@ def _build_html(alert) -> str:
 </head>
 <body>
   <div class="wrapper">
-    <p class="label">DataVex Strategic Alert</p>
+    <p class="label">Lead Intelligence Strategic Alert</p>
     <h1>🚨 {alert.event_type} Detected</h1>
     <span class="badge">{alert.severity} Severity</span>
 
@@ -88,7 +88,7 @@ def _build_html(alert) -> str:
     </div>
 
     <div class="footer">
-      <p>DataVex Strategic Enterprise Intelligence Engine</p>
+      <p>Lead Intelligence Enterprise Engine</p>
       <p>Open your dashboard at <a href="http://localhost:5173" style="color:#6366f1;">http://localhost:5173</a></p>
     </div>
   </div>
@@ -128,7 +128,7 @@ def send_alert_email(alert) -> bool:
 
     # Plain text fallback
     plain = (
-        f"DataVex Strategic Alert\n\n"
+        f"Lead Intelligence Strategic Alert\n\n"
         f"Company: {alert.company_name} ({alert.domain})\n"
         f"Event: {alert.event_type} [{alert.severity}]\n"
         f"Summary: {alert.event_summary}\n"

@@ -39,11 +39,17 @@ except ImportError:
 
 # ── database ──────────────────────────────────────────────────────────────────
 from database.db import init_db, get_db
-from database.models import WatchlistEntry, Alert
+from database.models import WatchlistEntry, Alert, ServiceCatalog
 
 # ── intelligence engine ───────────────────────────────────────────────────────
 try:
     from company_discovery.main import run_domain_pipeline, run_region_pipeline
+    from company_discovery.agents.service_catalog_agent import build_service_catalog
+    from company_discovery.agents.auditor_agent import run_auditor
+    from company_discovery.agents.context_agent import run_context_hunter
+    from company_discovery.agents.gap_analysis_agent import identify_gaps
+    from company_discovery.agents.verdict_agent import generate_verdict
+    from company_discovery.agents.report_agent import generate_report
 except ImportError as e:
     logging.warning("company_discovery import failed: %s", e)
     def run_domain_pipeline(domain, threshold=None): return {"error": "Module not found", "domain": domain}
@@ -67,7 +73,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)-24s | %(le
 # ═══════════════════════════════════════════════════════════════════════════════
 
 app = FastAPI(
-    title="DataVex Strategic Enterprise Intelligence API",
+    title="Lead Intelligence Platform API",
     version="2.0.0",
 )
 
@@ -115,6 +121,13 @@ class DomainAnalysisRequest(BaseModel):
 class RegionAnalysisRequest(BaseModel):
     region: str
     threshold: str
+
+class OnboardRequest(BaseModel):
+    company_url: str
+
+class ProspectAnalysisRequest(BaseModel):
+    prospect_url: str
+    service_catalog: dict
 
 class WatchlistAddRequest(BaseModel):
     company_name: str
@@ -175,7 +188,7 @@ class AlertOut(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "version": "2.0.0", "service": "DataVex Intelligence Engine"}
+    return {"status": "ok", "version": "2.0.0", "service": "Lead Intelligence Platform"}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -200,6 +213,70 @@ async def analyze_region(request: RegionAnalysisRequest):
     try:
         results = run_region_pipeline(request.region, request.threshold)
         return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/onboard")
+async def onboard_company(request: OnboardRequest, db: Session = Depends(get_db)):
+    try:
+        catalog_data = build_service_catalog(request.company_url)
+        
+        existing = db.query(ServiceCatalog).filter(ServiceCatalog.company_url == catalog_data["company_url"]).first()
+        if existing:
+            existing.company_name = catalog_data["company_name"]
+            existing.industry = catalog_data["industry"]
+            existing.services = json.dumps(catalog_data["services"])
+            existing.tech_expertise = json.dumps(catalog_data["tech_expertise"])
+            existing.target_industries = json.dumps(catalog_data["target_industries"])
+            db.commit()
+            db.refresh(existing)
+        else:
+            new_cat = ServiceCatalog(
+                company_name=catalog_data["company_name"],
+                company_url=catalog_data["company_url"],
+                industry=catalog_data["industry"],
+                services=json.dumps(catalog_data["services"]),
+                tech_expertise=json.dumps(catalog_data["tech_expertise"]),
+                target_industries=json.dumps(catalog_data["target_industries"])
+            )
+            db.add(new_cat)
+            db.commit()
+            db.refresh(new_cat)
+            
+        return catalog_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/service-catalog")
+def get_service_catalog(db: Session = Depends(get_db)):
+    cat = db.query(ServiceCatalog).order_by(ServiceCatalog.created_at.desc()).first()
+    if cat:
+        return {
+            "company_name": cat.company_name,
+            "company_url": cat.company_url,
+            "industry": cat.industry,
+            "services": json.loads(cat.services),
+            "tech_expertise": json.loads(cat.tech_expertise),
+            "target_industries": json.loads(cat.target_industries)
+        }
+    return None
+
+@app.post("/prospect-analysis")
+async def analyze_prospect(request: ProspectAnalysisRequest):
+    try:
+        prospect_domain = request.prospect_url.replace("https://", "").replace("http://", "").split("/")[0]
+        
+        # Phase 3: Swarm
+        prospect_profile = run_auditor(prospect_domain)
+        context_signals = run_context_hunter(prospect_domain, prospect_profile.get("raw_text", ""))
+        gap_analysis = identify_gaps(request.service_catalog, prospect_profile, context_signals)
+        
+        # Phase 4: Verdict & Strategy
+        verdict_data = generate_verdict(gap_analysis, context_signals)
+        report = generate_report(prospect_profile, context_signals, gap_analysis, verdict_data, request.service_catalog)
+        
+        report["mode"] = "prospect"
+        return report
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

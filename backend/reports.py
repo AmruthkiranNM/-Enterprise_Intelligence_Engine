@@ -1,5 +1,5 @@
 """
-backend/reports.py — DataVex Evidence-Based PDF Report Generator
+backend/reports.py — Lead Intelligence Evidence-Based PDF Report Generator
 ================================================================
 Generates clean, company-specific PDF reports using ONLY data
 present in the analysis payload. No boilerplate. No fabrication.
@@ -145,7 +145,7 @@ def _report_header(data: dict, elements: list):
 
     elements.append(Paragraph(f"Lead Intelligence Report: {company}", TITLE))
     elements.append(Paragraph(
-        f"Domain: {domain}  |  Generated: {date}  |  DataVex Strategic Engine",
+        f"Domain: {domain}  |  Generated: {date}  |  Lead Intelligence Engine",
         SUBTITLE,
     ))
 
