@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+python-dotenv
+requests
+beautifulsoup4
+reportlab
+apscheduler
+passlib[bcrypt]
+python-jose[cryptography]

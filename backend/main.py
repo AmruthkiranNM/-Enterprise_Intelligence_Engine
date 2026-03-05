@@ -39,7 +39,8 @@ except ImportError:
 
 # ── database ──────────────────────────────────────────────────────────────────
 from database.db import init_db, get_db
-from database.models import WatchlistEntry, Alert, ServiceCatalog
+from database.models import WatchlistEntry, Alert, ServiceCatalog, User
+from auth import hash_password, verify_password, create_access_token, get_current_user
 
 # ── intelligence engine ───────────────────────────────────────────────────────
 try:
@@ -129,6 +130,16 @@ class ProspectAnalysisRequest(BaseModel):
     prospect_url: str
     service_catalog: dict
 
+# ── Auth Schemas ─────────────────────────────────────────────────────
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class SigninRequest(BaseModel):
+    email: str
+    password: str
+
 class WatchlistAddRequest(BaseModel):
     company_name: str
     domain: str
@@ -192,6 +203,60 @@ async def root():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Auth Endpoints
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/auth/signup")
+def signup(request: SignupRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == request.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(
+        name=request.name,
+        email=request.email,
+        password_hash=hash_password(request.password),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    token = create_access_token({"sub": str(user.id)})
+    return {
+        "token": token,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "is_onboarded": user.is_onboarded,
+        }
+    }
+
+@app.post("/auth/signin")
+def signin(request: SigninRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user or not verify_password(request.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_access_token({"sub": str(user.id)})
+    return {
+        "token": token,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "is_onboarded": user.is_onboarded,
+        }
+    }
+
+@app.get("/auth/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "is_onboarded": current_user.is_onboarded,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Analysis Endpoints
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -217,10 +282,14 @@ async def analyze_region(request: RegionAnalysisRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/onboard")
-async def onboard_company(request: OnboardRequest, db: Session = Depends(get_db)):
+async def onboard_company(
+    request: OnboardRequest,
+    db: Session = Depends(get_db),
+    credentials=Depends(__import__("auth").bearer_scheme),
+):
     try:
         catalog_data = build_service_catalog(request.company_url)
-        
+
         existing = db.query(ServiceCatalog).filter(ServiceCatalog.company_url == catalog_data["company_url"]).first()
         if existing:
             existing.company_name = catalog_data["company_name"]
@@ -229,7 +298,6 @@ async def onboard_company(request: OnboardRequest, db: Session = Depends(get_db)
             existing.tech_expertise = json.dumps(catalog_data["tech_expertise"])
             existing.target_industries = json.dumps(catalog_data["target_industries"])
             db.commit()
-            db.refresh(existing)
         else:
             new_cat = ServiceCatalog(
                 company_name=catalog_data["company_name"],
@@ -241,11 +309,23 @@ async def onboard_company(request: OnboardRequest, db: Session = Depends(get_db)
             )
             db.add(new_cat)
             db.commit()
-            db.refresh(new_cat)
-            
+
+        # Mark user as onboarded if they are logged in
+        if credentials:
+            from auth import decode_token
+            payload = decode_token(credentials.credentials)
+            if payload:
+                uid = payload.get("sub")
+                if uid:
+                    user = db.query(User).filter(User.id == int(uid)).first()
+                    if user and not user.is_onboarded:
+                        user.is_onboarded = True
+                        db.commit()
+
         return catalog_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/service-catalog")
 def get_service_catalog(db: Session = Depends(get_db)):

@@ -1,5 +1,46 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+// ── Auth header helper ────────────────────────────────────────────────────────
+function authHeaders(token) {
+    const t = token || localStorage.getItem("token");
+    return t
+        ? { "Content-Type": "application/json", Authorization: `Bearer ${t}` }
+        : { "Content-Type": "application/json" };
+}
+
+// ── Auth endpoints ─────────────────────────────────────────────────────────────
+export async function signup(name, email, password) {
+    const res = await fetch(`${API_BASE}/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Signup failed" }));
+        throw new Error(err.detail || "Signup failed");
+    }
+    return res.json();
+}
+
+export async function signin(email, password) {
+    const res = await fetch(`${API_BASE}/auth/signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Sign in failed" }));
+        throw new Error(err.detail || "Sign in failed");
+    }
+    return res.json();
+}
+
+export async function getMe() {
+    const res = await fetch(`${API_BASE}/auth/me`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("Not authenticated");
+    return res.json();
+}
+
 export async function analyzeDomain(domain, threshold) {
     const res = await fetch(`${API_BASE}/analyze-domain`, {
         method: "POST",
@@ -44,14 +85,15 @@ export function getReportUrl(path) {
     return `${API_BASE}${path}`;
 }
 
-export async function onboardCompany(companyUrl) {
+export async function onboardCompany(companyUrl, token) {
     const res = await fetch(`${API_BASE}/onboard`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(token),
         body: JSON.stringify({ company_url: companyUrl }),
     });
     if (!res.ok) {
-        throw new Error("Failed to onboard company");
+        const err = await res.json().catch(() => ({ detail: "Failed to onboard company" }));
+        throw new Error(err.detail || "Failed to onboard company");
     }
     return res.json();
 }
